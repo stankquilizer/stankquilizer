@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>stankquilizer — page not found</title>
+<meta name="robots" content="noindex">
+<style>
+  :root {
+    --bg: #090909;
+    --panel: #111111;
+    --text: #f2f2f2;
+    --muted: #858585;
+    --line: #242424;
+    --max: 980px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    position: relative;
+    opacity: 0;
+    animation: pageIn .8s ease forwards;
+  }
+
+  @keyframes pageIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.045;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 2;
+    max-width: min(calc(100% - 40px), var(--max));
+  }
+
+  .code {
+    font-size: clamp(3.5rem, 16vw, 7rem);
+    font-weight: 800;
+    letter-spacing: -.05em;
+    margin: 0 0 10px;
+    animation: glitchGlow 4s linear infinite;
+  }
+
+  @keyframes glitchGlow {
+    0%   { color: #b34848; text-shadow: 0 0 25px rgba(179, 72, 72, .5); }
+    25%  { color: #4c63b3; text-shadow: 0 0 25px rgba(76, 99, 179, .5); }
+    50%  { color: #3f9169; text-shadow: 0 0 25px rgba(63, 145, 105, .5); }
+    75%  { color: #9250bd; text-shadow: 0 0 25px rgba(146, 80, 189, .5); }
+    100% { color: #b34848; text-shadow: 0 0 25px rgba(179, 72, 72, .5); }
+  }
+
+  h1 {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    margin: 0 0 18px;
+    letter-spacing: -.02em;
+  }
+
+  p {
+    color: var(--muted);
+    line-height: 1.65;
+    font-size: 1rem;
+    max-width: 46ch;
+    margin: 0 auto 36px;
+  }
+
+  a.home-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text);
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-size: .9rem;
+    transition: border-color .2s ease, transform .2s ease;
+  }
+
+  a.home-link:hover {
+    border-color: #444;
+    transform: translateY(-2px);
+  }
+
+  a, button { -webkit-tap-highlight-color: transparent; }
+</style>
+</head>
+<body>
+
+  <div class="wrap">
+    <div class="code" aria-hidden="true">404</div>
+    <h1>static everywhere. nothing here but noise.</h1>
+    <p>
+      this page doesn't exist — probably a dead link, a typo, or something
+      i deleted at 3am for no reason. either way there's nothing to hear here.
+    </p>
+    <a class="home-link" href="/">← back to stankquilizer</a>
+  </div>
+
+</body>
+</html>
