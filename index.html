@@ -12,13 +12,15 @@
         /* private mode / storage disabled — falls back to dark, the default */
       }
     })();
+
+
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="stankquilizer — music, albums, and releases.">
-  <title>stankquilizer — music</title>
+  <meta name="description" content="Stankquilizer — music, albums, and releases.">
+  <title>Stankquilizer — Music</title>
 
   <meta property="og:title" content="stankquilizer">
-  <meta property="og:description" content="stankquilizer — music, albums, and releases.">
+  <meta property="og:description" content="Stankquilizer — music, albums, and releases.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -107,7 +109,8 @@
       inset: 0;
       z-index: 999;
       pointer-events: none;
-      opacity: 0.045;
+      opacity: var(--grain-opacity, 0.045);
+      transition: opacity 8s ease;
       mix-blend-mode: overlay;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
@@ -212,6 +215,17 @@
       );
     }
 
+    /* very slow, atmospheric particle layer behind the whole page — sits
+       beneath even the plain background, gently pulses with the music */
+    #audioBg {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      pointer-events: none;
+    }
+
     /* subtle cursor trail across the whole page */
     #cursorTrail {
       position: fixed;
@@ -311,6 +325,13 @@
     .custom-cursor.is-hover {
       width: 32px;
       height: 32px;
+    }
+
+    /* trailing "ghost" ring — sits behind the main cursor, stays invisible
+       until music is playing, then fades in and pulses gently with the bass */
+    .custom-cursor-ghost {
+      z-index: 9599;
+      transition: opacity .2s ease;
     }
 
     /* back-to-top — sits just above the persistent player bar so they never collide */
@@ -429,6 +450,25 @@
       color: var(--muted);
     }
 
+    .live-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #d64545;
+      margin-right: 5px;
+      animation: liveDotPulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes liveDotPulse {
+      0%, 100% { opacity: .45; transform: scale(.85); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .live-dot { animation: none; opacity: .9; }
+    }
+
     .player-track,
     .player-album {
       white-space: nowrap;
@@ -474,6 +514,13 @@
     .player-eq.is-playing span {
       background: var(--text);
       animation-play-state: running;
+    }
+
+    /* once real frequency data is available, JS drives each bar's transform
+       directly every frame — the CSS keyframe has to step aside, since a
+       running animation would otherwise keep overriding the inline style */
+    .player-eq.is-audio-reactive span {
+      animation: none;
     }
 
     .player-eq span:nth-child(1) { height: 40%; animation-duration: 1.1s; animation-delay: 0s; }
@@ -533,14 +580,48 @@
     /* real volume control — the mute icon now does quick on/off, the
        slider handles actual level, so it's not just a second pause button */
     .player-volume {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      position: relative;
       flex-shrink: 0;
     }
 
+    .volume-popup {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 12px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+      white-space: nowrap;
+    }
+
+    .volume-popup::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--panel);
+    }
+
+    .player-volume:hover .volume-popup,
+    .player-volume:focus-within .volume-popup,
+    .player-volume.is-open .volume-popup {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
     .volume-slider {
-      width: 64px;
+      width: 90px;
       height: 4px;
       -webkit-appearance: none;
       appearance: none;
@@ -548,6 +629,7 @@
       border-radius: 999px;
       outline: none;
       cursor: pointer;
+      display: block;
     }
 
     .volume-slider::-webkit-slider-thumb {
@@ -576,8 +658,328 @@
       border-radius: 999px;
     }
 
-    @media (max-width: 640px) {
-      .volume-slider { width: 44px; }
+    /* fullscreen listening mode — opened by tapping the track info in the
+       main bar. Sits below the VHS glitch layer on purpose, so a track
+       transition's glitch flash still reads on top of it. */
+    .fullscreen-player {
+      position: fixed;
+      inset: 0;
+      z-index: 9400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .35s ease, visibility 0s linear .35s;
+    }
+
+    .fullscreen-player.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity .35s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fullscreen-player { transition: none; }
+      .fullscreen-player.is-open { transition: none; }
+    }
+
+    .fs-backdrop {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: blur(70px) brightness(.32) saturate(1.3);
+      transform: scale(1.2);
+      transition: background-image .4s ease;
+    }
+
+    .fs-close {
+      position: absolute;
+      top: calc(20px + env(safe-area-inset-top, 0px));
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, .4);
+      border: 1px solid rgba(255, 255, 255, .18);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1;
+    }
+
+    .fs-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: min(90vw, 440px);
+      padding: 20px;
+    }
+
+    .fs-art {
+      width: min(48vw, 220px);
+      height: min(48vw, 220px);
+      border-radius: 18px;
+      background-size: cover;
+      background-position: center;
+      background-color: var(--panel);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+      margin-bottom: 28px;
+    }
+
+    .fs-label {
+      font-size: .68rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .55);
+      margin-bottom: 10px;
+    }
+
+    .fs-title {
+      font-size: clamp(1.5rem, 5.5vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1.15;
+      color: #fff;
+      margin: 0 0 8px;
+    }
+
+    .fs-album {
+      font-size: .95rem;
+      color: rgba(255, 255, 255, .6);
+      margin-bottom: 30px;
+    }
+
+    .fs-waveform {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 3px;
+      width: 100%;
+      height: 46px;
+      margin-bottom: 34px;
+    }
+
+    .fs-waveform span {
+      flex: 1;
+      max-width: 6px;
+      background: rgba(255, 255, 255, .55);
+      border-radius: 3px 3px 0 0;
+      transform-origin: bottom;
+      transform: scaleY(.1);
+    }
+
+    .fs-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+    }
+
+    .fs-play-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #fff;
+      color: #111;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .fs-play-btn .icon-pause {
+      display: none;
+    }
+
+    .fs-play-btn.is-playing .icon-play {
+      display: none;
+    }
+
+    .fs-play-btn.is-playing .icon-pause {
+      display: block;
+    }
+
+    .fs-ctrl-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .18);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .fs-ctrl-btn:hover,
+    .fs-close:hover,
+    .fs-log-toggle:hover {
+      border-color: rgba(255, 255, 255, .4);
+    }
+
+    /* transmission log — this session's tracks, fullscreen mode only */
+    .fs-log-toggle {
+      position: absolute;
+      top: calc(20px + env(safe-area-inset-top, 0px));
+      left: 20px;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, .4);
+      border: 1px solid rgba(255, 255, 255, .18);
+      color: #fff;
+      font: inherit;
+      font-size: .7rem;
+      letter-spacing: .12em;
+      cursor: pointer;
+      z-index: 2;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .fs-log {
+      position: absolute;
+      top: calc(72px + env(safe-area-inset-top, 0px));
+      left: 20px;
+      width: min(calc(100vw - 40px), 320px);
+      max-height: min(50vh, 360px);
+      overflow-y: auto;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(8, 8, 8, .74);
+      border: 1px solid rgba(255, 255, 255, .14);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      color: #fff;
+      z-index: 2;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px);
+      transition: opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
+    }
+
+    .fs-log.is-open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      transition: opacity .25s ease, transform .25s ease;
+    }
+
+    .fs-log-title {
+      font-size: .62rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .5);
+      margin-bottom: 10px;
+    }
+
+    .fs-log-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .fs-log-list li {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      column-gap: 8px;
+      padding: 6px 0;
+      font-size: .8rem;
+      line-height: 1.3;
+      border-top: 1px solid rgba(255, 255, 255, .07);
+    }
+
+    .fs-log-list li:first-child {
+      border-top: none;
+    }
+
+    .fs-log-num {
+      color: rgba(255, 255, 255, .4);
+      font-size: .68rem;
+      padding-top: 2px;
+    }
+
+    .fs-log-album {
+      display: block;
+      font-size: .66rem;
+      color: rgba(255, 255, 255, .5);
+    }
+
+    .fs-log-empty {
+      font-size: .74rem;
+      color: rgba(255, 255, 255, .45);
+    }
+
+    /* session evolution — tiny drifting symbols (20 min of listening,
+       desktop only) and one quiet line (30 min) */
+    .evo-symbols {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 450;
+    }
+
+    .evo-symbol {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      color: var(--text);
+      opacity: 0;
+      animation: evoDrift var(--dur, 22s) ease-in-out infinite;
+    }
+
+    .evo-symbol svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    @keyframes evoDrift {
+      0%   { opacity: 0;   transform: translateY(0) rotate(0deg); }
+      18%  { opacity: .18; }
+      82%  { opacity: .18; }
+      100% { opacity: 0;   transform: translateY(-80px) rotate(35deg); }
+    }
+
+    .evo-whisper {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: calc(var(--player-height) + 10px + env(safe-area-inset-bottom, 0px));
+      text-align: center;
+      font-size: .68rem;
+      letter-spacing: .14em;
+      color: var(--muted);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 840;
+      transition: opacity 3s ease;
+    }
+
+    .evo-whisper.is-visible {
+      opacity: .55;
+    }
+
+    @media (max-width: 480px) {
+      .fs-art { width: 58vw; height: 58vw; margin-bottom: 22px; }
+      .fs-waveform { height: 36px; margin-bottom: 26px; }
     }
 
     /* soft glow that follows the cursor in the hero */
@@ -693,25 +1095,33 @@
       cursor: pointer;
       user-select: none;
       -webkit-user-select: none;
-      transition: transform .15s ease;
     }
 
+    /* chromatic aberration on hover — uses "filter", a property the
+       color-cycling animation never touches, so it layers cleanly on top
+       without fighting the running animation for priority */
+    h1:hover {
+      filter: drop-shadow(-2px 0 rgba(255, 45, 85, .55)) drop-shadow(2px 0 rgba(45, 200, 255, .55));
+    }
+
+    /* --glow-boost stays 1 (the original look) for a first-time visitor;
+       returning visits and long listening sessions nudge it up very slightly */
     @keyframes rgbGlow {
       0% {
         color: #ff3b3b;
-        text-shadow: 0 0 25px rgba(255, 59, 59, 0.85), 0 0 60px rgba(255, 59, 59, 0.35);
+        text-shadow: 0 0 calc(25px * var(--glow-boost, 1)) rgba(255, 59, 59, calc(0.85 * var(--glow-boost, 1))), 0 0 calc(60px * var(--glow-boost, 1)) rgba(255, 59, 59, calc(0.35 * var(--glow-boost, 1)));
       }
       33% {
         color: #3bff5e;
-        text-shadow: 0 0 25px rgba(59, 255, 94, 0.85), 0 0 60px rgba(59, 255, 94, 0.35);
+        text-shadow: 0 0 calc(25px * var(--glow-boost, 1)) rgba(59, 255, 94, calc(0.85 * var(--glow-boost, 1))), 0 0 calc(60px * var(--glow-boost, 1)) rgba(59, 255, 94, calc(0.35 * var(--glow-boost, 1)));
       }
       66% {
         color: #3b8fff;
-        text-shadow: 0 0 25px rgba(59, 143, 255, 0.85), 0 0 60px rgba(59, 143, 255, 0.35);
+        text-shadow: 0 0 calc(25px * var(--glow-boost, 1)) rgba(59, 143, 255, calc(0.85 * var(--glow-boost, 1))), 0 0 calc(60px * var(--glow-boost, 1)) rgba(59, 143, 255, calc(0.35 * var(--glow-boost, 1)));
       }
       100% {
         color: #ff3b3b;
-        text-shadow: 0 0 25px rgba(255, 59, 59, 0.85), 0 0 60px rgba(255, 59, 59, 0.35);
+        text-shadow: 0 0 calc(25px * var(--glow-boost, 1)) rgba(255, 59, 59, calc(0.85 * var(--glow-boost, 1))), 0 0 calc(60px * var(--glow-boost, 1)) rgba(255, 59, 59, calc(0.35 * var(--glow-boost, 1)));
       }
     }
 
@@ -816,6 +1226,75 @@
       border-color: #444;
     }
 
+    /* Category 4 — album "portals": hidden entirely on touch/mobile by
+       default (zero layout or paint cost there). On real desktop hover
+       (never sticky-tapped on touch), the card pops slightly above its
+       neighbors without shifting the grid, its cover art reveals under a
+       cursor-following spotlight, and a track-count line expands into view */
+    .portal-art,
+    .portal-info {
+      display: none;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .portal-art,
+      .portal-info {
+        display: block;
+      }
+
+      .album:not(.shuffle-album):not(.unreleased-album) {
+        transition: transform .3s ease, border-color .2s ease, box-shadow .3s ease;
+      }
+
+      .album:not(.shuffle-album):not(.unreleased-album):hover {
+        transform: scale(1.055) translateY(-6px);
+        z-index: 5;
+        box-shadow: 0 24px 50px rgba(0, 0, 0, .4);
+      }
+
+      .portal-art {
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        z-index: 0;
+        pointer-events: none;
+        -webkit-mask-image: radial-gradient(circle 100px at var(--mx, 50%) var(--my, 50%), #000, transparent 72%);
+        mask-image: radial-gradient(circle 100px at var(--mx, 50%) var(--my, 50%), #000, transparent 72%);
+        transition: opacity .45s ease;
+      }
+
+      .album:hover .portal-art {
+        opacity: .5;
+      }
+
+      .portal-info {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        margin-top: 0;
+        font-size: .66rem;
+        letter-spacing: .05em;
+        color: var(--muted);
+        transition: max-height .3s ease, opacity .3s ease, margin-top .3s ease;
+      }
+
+      .album:hover .portal-info {
+        max-height: 30px;
+        opacity: 1;
+        margin-top: 8px;
+      }
+
+      /* keep real content above the spotlight art layer */
+      .album-body,
+      .album-link,
+      .last-played-badge {
+        position: relative;
+        z-index: 1;
+      }
+    }
+
     /* each release gets its own dark accent on hover */
     .album:nth-of-type(1):hover {
       border-color: #b34848;
@@ -871,6 +1350,34 @@
     .album:nth-of-type(3) .cover { background-image: url("data:image/jpeg;base64,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"); }
     .album:nth-of-type(4) .cover { background-image: url("data:image/jpeg;base64,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"); }
     .album:nth-of-type(5) .cover { background-image: url("data:image/jpeg;base64,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"); }
+
+    /* mystery cover for an unreleased album — no artwork yet, so a plain
+       dashed placeholder with a "?" stands in, echoing the shuffle tile's
+       dashed language for "this one's a little different" */
+    .album.unreleased-album .cover {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-style: dashed;
+      color: var(--muted);
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: none;
+    }
+
+    .coming-soon-label {
+      display: inline-flex;
+      width: fit-content;
+      margin-top: 22px;
+      padding: 10px 14px;
+      border: 1px dashed var(--line);
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 700;
+      border-radius: 3px;
+      cursor: default;
+    }
+
 
     .waveform {
       display: flex;
@@ -1091,43 +1598,6 @@
       footer { flex-direction: column; }
     }
 
-
-    /* adaptive memory / completion reset */
-    .memory-reset {
-      appearance: none;
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      padding: 0;
-      font: inherit;
-      font-size: .75rem;
-      cursor: pointer;
-      opacity: .7;
-      transition: color .2s ease, opacity .2s ease, transform .2s ease;
-    }
-
-    .memory-reset:hover {
-      color: var(--text);
-      opacity: 1;
-      transform: translateY(-1px);
-    }
-
-    .memory-reset:focus-visible {
-      outline: 1px solid currentColor;
-      outline-offset: 5px;
-      border-radius: 4px;
-    }
-
-    .memory-reset[hidden] { display: none; }
-
-    body[data-memory-state="chaos"] .vhs-glitch {
-      opacity: calc(.8 * var(--memory-intensity, 1));
-    }
-
-    body.memory-resting .memory-reset {
-      opacity: .45;
-    }
-
     /* print joke — nobody needs a paper copy of this */
     .print-only {
       display: none;
@@ -1156,6 +1626,168 @@
         z-index: 99999;
       }
     }
+  
+
+    /* post-v3.6: audio-reactive ring around fullscreen artwork */
+    .fs-art { position: relative; overflow: visible; }
+    .fs-ring {
+      position: absolute;
+      left: 50%; top: 50%;
+      width: 132%; height: 132%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      overflow: visible;
+      opacity: .72;
+    }
+    .fs-ring circle { fill: none; stroke: currentColor; stroke-width: 1; opacity: .7; }
+    .fs-ring .ring-core { stroke-width: 1.5; opacity: .28; }
+
+    /* post-v3.6: transmission counter / signal readout */
+    .player-signal {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: 8px;
+      color: var(--muted);
+      font-size: .54rem;
+      letter-spacing: .08em;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .player-signal::before {
+      content: "";
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .65;
+    }
+    .player-signal .signal-value { min-width: 39px; text-align: right; }
+    .player-signal .transmission-value { min-width: 74px; }
+
+    /* post-v3.6: fullscreen track-specific typography */
+    .fullscreen-player.track-zzz .fs-title {
+      animation: fsZzzFade 5s ease-in-out infinite;
+      letter-spacing: .08em;
+      font-weight: 500;
+    }
+    .fullscreen-player.track-earth .fs-title {
+      animation: fsEarthShake .24s steps(2, end) infinite;
+    }
+    .fullscreen-player.track-sunken .fs-title {
+      opacity: .72;
+      letter-spacing: .04em;
+      text-shadow: 0 0 28px rgba(90, 140, 255, .18);
+    }
+    .fullscreen-player.track-seraphim .fs-title {
+      letter-spacing: .08em;
+      text-shadow: 0 0 24px rgba(255, 220, 120, .22);
+    }
+    .fullscreen-player.track-typebeat .fs-title {
+      animation: fsRgbTitle 2.2s linear infinite;
+    }
+    .fullscreen-player.track-life .fs-title {
+      letter-spacing: -.04em;
+      transform: scaleX(.96);
+    }
+    .fullscreen-player.track-ignantamus .fs-title {
+      font-style: italic;
+      letter-spacing: .02em;
+    }
+    @keyframes fsZzzFade {
+      0%,100% { opacity: .35; transform: translateY(3px); }
+      50% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fsEarthShake {
+      0%,100% { transform: translate(0,0) rotate(0); }
+      25% { transform: translate(-1px, .5px) rotate(-.2deg); }
+      50% { transform: translate(1px, -.5px) rotate(.2deg); }
+      75% { transform: translate(-.5px, 1px) rotate(-.1deg); }
+    }
+    @keyframes fsRgbTitle {
+      0% { text-shadow: 2px 0 rgba(255,0,0,.55), -2px 0 rgba(0,255,255,.35); }
+      33% { text-shadow: 0 2px rgba(0,255,0,.55), 0 -2px rgba(255,0,255,.35); }
+      66% { text-shadow: -2px 0 rgba(0,100,255,.55), 2px 0 rgba(255,180,0,.35); }
+      100% { text-shadow: 2px 0 rgba(255,0,0,.55), -2px 0 rgba(0,255,255,.35); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fullscreen-player.track-zzz .fs-title,
+      .fullscreen-player.track-earth .fs-title,
+      .fullscreen-player.track-typebeat .fs-title { animation: none; }
+    }
+
+    /* post-v3.12: keep the radio connection attached to the release number,
+       so it reads like metadata instead of a floating badge */
+    .album-number .radio-note {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: .5rem;
+      line-height: 1.2;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      vertical-align: middle;
+      pointer-events: none;
+      font-weight: 500;
+    }
+    .album.is-radio-playing .radio-note { color: var(--text); border-color: color-mix(in srgb, var(--text) 28%, var(--line)); }
+    .album.is-radio-playing { box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent), 0 0 28px color-mix(in srgb, var(--text) 3.5%, transparent); }
+
+    /* post-v3.6: memory flashes and new-release hints */
+    .memory-flash {
+      position: fixed;
+      left: 50%;
+      bottom: calc(var(--player-height) + 12px);
+      transform: translate(-50%, 8px);
+      z-index: 860;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 88%, transparent);
+      color: var(--muted);
+      font-size: .58rem;
+      letter-spacing: .08em;
+      text-transform: lowercase;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .35s ease, transform .35s ease;
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+    }
+    .memory-flash.is-visible { opacity: 1; transform: translate(-50%, 0); }
+    .album .new-since-note {
+      display: none;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: .55rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .album.is-new-since .new-since-note { display: block; }
+
+    /* post-v3.6: copy-setlist control */
+    .fs-log-copy {
+      display: block;
+      margin: 12px 0 0;
+      padding: 5px 8px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: .56rem;
+      letter-spacing: .08em;
+      text-transform: lowercase;
+      cursor: pointer;
+    }
+    .fs-log-copy:hover, .fs-log-copy.copied { color: var(--text); border-color: var(--text); }
+
+    @media (max-width: 700px) {
+      .player-signal { display: none; }
+      .memory-flash { max-width: calc(100vw - 28px); overflow: hidden; text-overflow: ellipsis; }
+    }
+
   </style>
 </head>
 <body>
@@ -1163,8 +1795,10 @@
   <div class="print-only" aria-hidden="true">why are you printing a music website</div>
   <div class="mood-overlay" id="moodOverlay" aria-hidden="true"></div>
   <div class="boot-overlay" id="bootOverlay" aria-hidden="true"></div>
+  <canvas id="audioBg" aria-hidden="true"></canvas>
   <canvas id="cursorTrail" aria-hidden="true"></canvas>
   <div class="vhs-glitch" id="vhsGlitch" aria-hidden="true"></div>
+  <div class="custom-cursor custom-cursor-ghost" id="customCursorGhost" aria-hidden="true"></div>
   <div class="custom-cursor" id="customCursor" aria-hidden="true"></div>
 
   <button type="button" class="theme-toggle" id="themeToggle" aria-label="switch to light mode">
@@ -1183,8 +1817,8 @@
       <svg class="icon-pause" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
     </button>
 
-    <div class="player-info">
-      <div class="player-label">now playing</div>
+    <div class="player-info" id="playerInfo">
+      <div class="player-label" id="playerLabel">now playing <span class="player-signal" id="playerSignal" aria-hidden="true"><span class="transmission-value">transmission --/12</span><span class="signal-value">signal --%</span></span></div>
       <div class="player-track" id="playerTrack">silent until you press unmute</div>
       <div class="player-album" id="playerAlbum">stankquilizer radio</div>
     </div>
@@ -1197,16 +1831,58 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
     </button>
 
-    <div class="player-volume">
+    <div class="player-volume" id="playerVolumeWrap">
       <button type="button" class="player-ctrl-btn" id="playerMute" aria-label="mute" aria-pressed="false">
         <svg class="icon-unmuted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
         <svg class="icon-muted" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
       </button>
-      <input type="range" class="volume-slider" id="playerVolume" min="0" max="1" step="0.01" value="1" aria-label="volume">
+      <div class="volume-popup" id="volumePopup">
+        <input type="range" class="volume-slider" id="playerVolume" min="0" max="1" step="0.01" value="1" aria-label="volume">
+      </div>
     </div>
   </div>
 
   <audio id="playerAudio" preload="none"></audio>
+
+  <div class="evo-whisper" id="evoWhisper" aria-hidden="true">you've been here a while</div>
+  <div class="memory-flash" id="memoryFlash" aria-live="polite"></div>
+
+  <div class="fullscreen-player" id="fullscreenPlayer" aria-hidden="true">
+    <div class="fs-backdrop" id="fsBackdrop" aria-hidden="true"></div>
+
+    <button type="button" class="fs-close" id="fsClose" aria-label="close fullscreen player">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <button type="button" class="fs-log-toggle" id="fsLogToggle" aria-expanded="false" aria-controls="fsLog">log</button>
+    <div class="fs-log" id="fsLog" aria-hidden="true">
+      <div class="fs-log-title">transmission log</div>
+      <button type="button" class="fs-log-copy" id="fsLogCopy">copy setlist</button>
+      <ol class="fs-log-list" id="fsLogList"></ol>
+      <div class="fs-log-empty" id="fsLogEmpty">nothing received yet</div>
+    </div>
+
+    <div class="fs-content">
+      <div class="fs-art" id="fsArt" aria-hidden="true"></div>
+      <div class="fs-label">now playing</div>
+      <h2 class="fs-title" id="fsTrack">&mdash;</h2>
+      <div class="fs-album" id="fsAlbum">&mdash;</div>
+
+      <div class="fs-waveform" id="fsWaveform" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="fs-controls">
+        <button type="button" class="fs-play-btn" id="fsToggle" aria-label="pause music">
+          <svg class="icon-play" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+          <svg class="icon-pause" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+        <button type="button" class="fs-ctrl-btn" id="fsNext" aria-label="next track">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <header>
     <div class="eq-bg" id="eqBg" aria-hidden="true"></div>
@@ -1235,6 +1911,7 @@
         <div class="albums">
 
           <article class="album" data-reveal>
+            <div class="portal-art" aria-hidden="true"></div>
             <div class="album-body">
               <div class="album-top">
               <div class="cover" aria-hidden="true"></div>
@@ -1259,6 +1936,7 @@
                 <span class="genre-tag">hyperpop</span>
             </div>
             <div class="release-date">released jul 1, 2026</div>
+            <div class="portal-info" aria-hidden="true">12 tracks</div>
             </div>
             <a class="album-link"
                href="https://untitled.stream/library/project/OPgCT2BgNTBrrKePJIsNX"
@@ -1271,6 +1949,7 @@
           </article>
 
           <article class="album" data-reveal>
+            <div class="portal-art" aria-hidden="true"></div>
             <div class="album-body">
               <div class="album-top">
               <div class="cover" aria-hidden="true"></div>
@@ -1296,6 +1975,7 @@
                 <span class="genre-tag">wonky</span>
             </div>
             <div class="release-date">released aug 31, 2026</div>
+            <div class="portal-info" aria-hidden="true">7 tracks</div>
             </div>
             <a class="album-link"
                href="https://untitled.stream/library/project/G465X2D869UJpOWI4dIBQ"
@@ -1308,11 +1988,12 @@
           </article>
 
           <article class="album" data-reveal>
+            <div class="portal-art" aria-hidden="true"></div>
             <div class="album-body">
               <div class="album-top">
               <div class="cover" aria-hidden="true"></div>
               <div class="album-info">
-                <div class="album-number">03</div>
+                <div class="album-number">03<span class="radio-note" aria-hidden="true">4 on the radio</span></div>
                 <h3>from now on...</h3>
               </div>
               <div class="waveform" aria-hidden="true">
@@ -1330,6 +2011,7 @@
                 <span class="genre-tag">ambient techno</span>
             </div>
             <div class="release-date">released sep 3, 2026</div>
+            <div class="portal-info" aria-hidden="true">8 tracks</div>
             </div>
             <a class="album-link"
                href="https://untitled.stream/library/project/mBKVJxCc8qqDsZfmdB9Jw"
@@ -1342,11 +2024,12 @@
           </article>
 
           <article class="album" data-reveal>
+            <div class="portal-art" aria-hidden="true"></div>
             <div class="album-body">
               <div class="album-top">
               <div class="cover" aria-hidden="true"></div>
               <div class="album-info">
-                <div class="album-number">04</div>
+                <div class="album-number">04<span class="radio-note" aria-hidden="true">4 on the radio</span></div>
                 <h3>u with me?</h3>
               </div>
               <div class="waveform" aria-hidden="true">
@@ -1368,6 +2051,7 @@
                 <span class="genre-tag">instrumental</span>
             </div>
             <div class="release-date">released sep 10, 2026</div>
+            <div class="portal-info" aria-hidden="true">8 tracks</div>
             </div>
             <a class="album-link"
                href="https://untitled.stream/library/project/mWyUU0MZxGXJ9i69dh8t6"
@@ -1380,11 +2064,12 @@
           </article>
 
           <article class="album" data-reveal>
+            <div class="portal-art" aria-hidden="true"></div>
             <div class="album-body">
               <div class="album-top">
               <div class="cover" aria-hidden="true"></div>
               <div class="album-info">
-                <div class="album-number">05</div>
+                <div class="album-number">05<span class="radio-note" aria-hidden="true">4 on the radio</span></div>
                 <h3>ultimate lie</h3>
               </div>
               <div class="waveform" aria-hidden="true">
@@ -1408,6 +2093,7 @@
                 <span class="genre-tag">electronic</span>
             </div>
             <div class="release-date">released sep 17, 2026</div>
+            <div class="portal-info" aria-hidden="true">8 tracks</div>
             </div>
             <a class="album-link"
                href="https://untitled.stream/library/project/m6W748e3pLY4AoFSfXpoJ"
@@ -1417,6 +2103,20 @@
             </a>
           
             <span class="last-played-badge" aria-hidden="true">last played</span>
+          </article>
+
+          <article class="album unreleased-album" data-reveal>
+            <div class="album-body">
+              <div class="album-top">
+                <div class="cover" aria-hidden="true">?</div>
+                <div class="album-info">
+                  <div class="album-number">06</div>
+                  <h3>???</h3>
+                </div>
+              </div>
+            <div class="release-date">tba</div>
+            </div>
+            <span class="coming-soon-label">coming soon</span>
           </article>
 
           <button type="button" class="album shuffle-album" id="shuffleBtn" data-reveal aria-label="pick a random album">
@@ -1450,7 +2150,6 @@
   <footer class="wrap">
     <span>© <span id="year"></span> stankquilizer</span>
     <span>all noise reserved.</span>
-    <button type="button" class="memory-reset" id="memoryReset" hidden>res(e)t</button>
   </footer>
 
   <script>
@@ -1493,7 +2192,7 @@
     // prominent equalizer strip along the base of the hero
     const eqBg = document.getElementById("eqBg");
     if (eqBg) {
-      const barCount = 80;
+      const barCount = window.matchMedia("(max-width: 650px)").matches ? 48 : 80;
       for (let i = 0; i < barCount; i++) {
         const bar = document.createElement("span");
         const duration = (1.8 + Math.random() * 2.2).toFixed(2);
@@ -1529,6 +2228,460 @@
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // shared audio-analysis plumbing — built once, feeds the real equalizer,
+    // the reactive background, the title's bass pulse, and the cursor ghost.
+    // IMPORTANT: once an <audio> element is wrapped via createMediaElementSource,
+    // its sound no longer reaches the speakers automatically — it MUST be
+    // routed back through to audioCtx.destination or playback goes silent.
+    const AudioReactive = (function () {
+      let audioCtx = null;
+      let analyser = null;
+      let dataArray = null;
+      let ready = false;
+      let loopStarted = false;
+      let running = false;
+      const listeners = [];
+
+      // track-aware visual calibration. The supplied 12-track radio was measured
+      // directly, and the resulting visual gains are stored on each track so the
+      // quiet first-album tracks stay visible without the gain drifting upward
+      // during playback. Beats still come from bass punch above a slow baseline.
+      const GAIN_MIN = 1;
+      const GAIN_MAX = 3;
+      const PUNCH_FLOOR = 0.05;
+      const BEAT_AT = 0.6;
+      const BEAT_REFRACTORY_MS = 133;
+      const gains = { overall: 1, bass: 1, treble: 1 };
+      let bassBase = 0;
+      let punchPeak = PUNCH_FLOOR;
+      let punch = 0;
+      let beatPulse = 0;
+      let lastBeatAt = -Infinity;
+      let lastT = 0;
+
+      const clampGain = (v) => Math.max(GAIN_MIN, Math.min(GAIN_MAX, v));
+
+      function init(audioEl) {
+        if (ready) return true;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass || !audioEl) return false;
+        try {
+          audioCtx = new AudioContextClass();
+          const sourceNode = audioCtx.createMediaElementSource(audioEl);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.55;
+          dataArray = new Uint8Array(analyser.frequencyBinCount);
+          sourceNode.connect(analyser);
+          analyser.connect(audioCtx.destination);
+          ready = true;
+        } catch (e) {
+          ready = false;
+        }
+        return ready;
+      }
+
+      function resume() {
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+      }
+
+      function rawBass(data) {
+        const range = Math.max(1, Math.floor(data.length * 0.12));
+        let sum = 0;
+        for (let i = 0; i < range; i++) sum += data[i];
+        return sum / range / 255;
+      }
+      function rawTreble(data) {
+        const start = Math.floor(data.length * 0.6);
+        let sum = 0, n = 0;
+        for (let i = start; i < data.length; i++) { sum += data[i]; n++; }
+        return n ? sum / n / 255 : 0;
+      }
+      function rawOverall(data) {
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) sum += data[i];
+        return sum / data.length / 255;
+      }
+
+      function calibrate(data) {
+        const now = performance.now();
+        const dt = lastT ? Math.min(0.2, Math.max(0.001, (now - lastT) / 1000)) : 1 / 60;
+        lastT = now;
+        const b = rawBass(data);
+
+        if (!bassBase) bassBase = b;
+        bassBase += (b - bassBase) * (1 - Math.pow(0.98, dt * 60));
+        const rise = Math.max(0, b - bassBase);
+        const decay = Math.pow(0.5, dt / 0.6);
+        punchPeak = Math.max(rise, punchPeak * decay);
+        punch = Math.min(1, rise / Math.max(punchPeak, PUNCH_FLOOR));
+        beatPulse *= Math.pow(0.9, dt * 60);
+        if (punch > BEAT_AT && now - lastBeatAt > BEAT_REFRACTORY_MS) {
+          beatPulse = 1;
+          lastBeatAt = now;
+        }
+      }
+
+      function resetCalibration(visualGain = 1) {
+        const baseGain = clampGain(Number.isFinite(visualGain) ? visualGain : 1);
+        gains.overall = baseGain;
+        gains.bass = baseGain;
+        gains.treble = baseGain;
+        bassBase = 0;
+        punchPeak = PUNCH_FLOOR;
+        punch = 0;
+        beatPulse = 0;
+        lastBeatAt = -Infinity;
+        lastT = 0;
+      }
+
+      function loop() {
+        if (!running) return;
+        requestAnimationFrame(loop);
+        if (!ready || !analyser || !dataArray || document.hidden) return;
+        analyser.getByteFrequencyData(dataArray);
+        calibrate(dataArray);
+        for (let i = 0; i < listeners.length; i++) {
+          try { listeners[i](dataArray); } catch (e) {}
+        }
+      }
+      function start() {
+        if (running) return;
+        running = true;
+        if (!loopStarted) loopStarted = true;
+        requestAnimationFrame(loop);
+      }
+      function stop() {
+        running = false;
+      }
+      function onFrame(fn) { listeners.push(fn); }
+      function getBassEnergy(data) { return Math.min(1, rawBass(data) * gains.bass); }
+      function getTrebleEnergy(data) { return Math.min(1, rawTreble(data) * gains.treble); }
+      function getOverallEnergy(data) { return Math.min(1, rawOverall(data) * gains.overall); }
+      function getSpectrum(data, count) {
+        const usable = Math.min(data.length, 100);
+        const out = [];
+        for (let i = 0; i < count; i++) {
+          const start = Math.floor(usable * Math.pow(i / count, 1.6));
+          let end = Math.floor(usable * Math.pow((i + 1) / count, 1.6));
+          if (end <= start) end = start + 1;
+          let sum = 0, n = 0;
+          for (let j = start; j < end && j < data.length; j++) { sum += data[j]; n++; }
+          out.push(n ? Math.min(1, (sum / n / 255) * gains.overall) : 0);
+        }
+        return out;
+      }
+      return {
+        init, resume, start, stop, onFrame, resetCalibration,
+        getBassEnergy, getTrebleEnergy, getOverallEnergy,
+        getSpectrum,
+        getBars: getSpectrum,
+        getBassPunch: () => punch,
+        getBeatPulse: () => beatPulse,
+        getGains: () => ({ overall: gains.overall, bass: gains.bass, treble: gains.treble }),
+        isReady: () => ready,
+      };
+    })();
+
+    // shared mood control — the time-of-day tint from before still runs by
+    // default; a track can temporarily override it while it's playing, and
+    // it reverts the moment playback pauses or stops
+    const MoodController = (function () {
+      const overlay = document.getElementById("moodOverlay");
+      let override = null; // { hue, opacity, rgbCycle } or null
+      let cycleRunning = false;
+
+      function timeBasedMood() {
+        const hour = new Date().getHours();
+        if (hour >= 22 || hour < 5) return { hue: 235, opacity: 0.045 };
+        if (hour < 8) return { hue: 25, opacity: 0.02 };
+        if (hour < 17) return { hue: 200, opacity: 0.012 };
+        if (hour < 20) return { hue: 15, opacity: 0.03 };
+        return { hue: 265, opacity: 0.04 };
+      }
+
+      function paint(hue, opacity) {
+        if (!overlay) return;
+        overlay.style.background = `radial-gradient(circle at 50% 0%, hsl(${hue}, 55%, 50%), transparent 70%)`;
+        overlay.style.opacity = String(opacity);
+      }
+
+      function stopCycle() {
+        cycleRunning = false;
+      }
+
+      function startCycle() {
+        if (cycleRunning || prefersReducedMotion) return;
+        cycleRunning = true;
+        function frame() {
+          if (!cycleRunning) return;
+          const hue = (Date.now() / 25) % 360;
+          paint(hue, override ? override.opacity : 0.05);
+          requestAnimationFrame(frame);
+        }
+        frame();
+      }
+
+      function apply() {
+        if (override && override.rgbCycle) {
+          startCycle();
+          return;
+        }
+        stopCycle();
+        const { hue, opacity } = override || timeBasedMood();
+        paint(hue, opacity);
+      }
+
+      function setTrackMood(mood) {
+        if (!mood) {
+          clearTrackMood();
+          return;
+        }
+        override = { hue: mood.hue, opacity: mood.opacity, rgbCycle: !!mood.rgbCycle };
+        apply();
+      }
+
+      function clearTrackMood() {
+        override = null;
+        apply();
+      }
+
+      apply();
+      setInterval(apply, 30 * 60 * 1000);
+
+      return { setTrackMood, clearTrackMood };
+    })();
+
+    // shared particle-behavior control — a track can override direction/
+    // speed while it plays; reverts to the calm default otherwise
+    const ParticleController = (function () {
+      let modeOverride = null; // { mode, speedMultiplier } or null
+
+      function setMode(mode, speedMultiplier) {
+        modeOverride = { mode, speedMultiplier: speedMultiplier == null ? 1 : speedMultiplier };
+      }
+
+      function clearMode() {
+        modeOverride = null;
+      }
+
+      function getMode() {
+        return modeOverride || { mode: "up", speedMultiplier: 1 };
+      }
+
+      return { setMode, clearMode, getMode };
+    })();
+
+    // Category 5 — on-device site memory. Nothing here ever leaves the
+    // browser: it's a few counters in localStorage so the site can notice a
+    // returning visitor. If storage is blocked (private mode, sandboxed
+    // frames) everything quietly falls back to in-memory values — it never
+    // throws. Visiting ?reset wipes it (handy for testing "first visit").
+    const SiteMemory = (function () {
+      const KEY = "stankquilizer_memory";
+      const SESSION_KEY = "stankquilizer_session_counted";
+      const LATE_KEY = "stankquilizer_latenight_shown";
+      const LAST_PLAYED_KEY = "stankquilizer_last_played";
+
+      const local = () => window.localStorage;
+      const session = () => window.sessionStorage;
+
+      function safeGet(getStore, key) {
+        try { return getStore().getItem(key); } catch (e) { return null; }
+      }
+      function safeSet(getStore, key, value) {
+        try { getStore().setItem(key, value); } catch (e) { /* storage blocked */ }
+      }
+      function safeRemove(getStore, key) {
+        try { getStore().removeItem(key); } catch (e) { /* storage blocked */ }
+      }
+
+      function fresh() {
+        return { firstVisit: Date.now(), visits: 0, tracksHeard: 0, albumsVisited: [], radioSessions: 0 };
+      }
+
+      // never trust stored JSON — coerce every field so a corrupted entry
+      // can't break the site
+      function clean(raw) {
+        const base = fresh();
+        if (!raw || typeof raw !== "object") return base;
+        const count = (v) => (typeof v === "number" && isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+        return {
+          firstVisit: typeof raw.firstVisit === "number" && isFinite(raw.firstVisit) ? raw.firstVisit : base.firstVisit,
+          visits: count(raw.visits),
+          tracksHeard: count(raw.tracksHeard),
+          albumsVisited: Array.isArray(raw.albumsVisited) ? raw.albumsVisited.filter((x) => typeof x === "string") : [],
+          radioSessions: count(raw.radioSessions),
+        };
+      }
+
+      let wasReset = false;
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has("reset")) {
+          safeRemove(local, KEY);
+          safeRemove(local, LAST_PLAYED_KEY);
+          safeRemove(session, SESSION_KEY);
+          safeRemove(session, LATE_KEY);
+          wasReset = true;
+          params.delete("reset");
+          const qs = params.toString();
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + (qs ? "?" + qs : "") + window.location.hash
+          );
+        }
+      } catch (e) {
+        /* couldn't tidy the URL — the reset itself already happened above */
+      }
+
+      let parsed = null;
+      try { parsed = JSON.parse(safeGet(local, KEY) || "null"); } catch (e) { parsed = null; }
+      const data = clean(parsed);
+
+      function save() {
+        safeSet(local, KEY, JSON.stringify(data));
+      }
+
+      // a "visit" is one browser session, so reloading a tab doesn't inflate it
+      if (safeGet(session, SESSION_KEY) !== "1") {
+        data.visits += 1;
+        safeSet(session, SESSION_KEY, "1");
+      }
+      save();
+
+      return {
+        wasReset: () => wasReset,
+        getVisits: () => data.visits,
+        recordTrackHeard() { data.tracksHeard += 1; save(); },
+        recordRadioSession() { data.radioSessions += 1; save(); },
+        recordAlbumVisit(href) {
+          if (typeof href === "string" && href && data.albumsVisited.indexOf(href) === -1) {
+            data.albumsVisited.push(href);
+            save();
+          }
+        },
+        hasShownLateNight: () => safeGet(session, LATE_KEY) === "1",
+        markLateNightShown() { safeSet(session, LATE_KEY, "1"); },
+        // read-only snapshot for the Category 6 terminal's "stats" command
+        getStats() {
+          return {
+            firstVisit: data.firstVisit,
+            visits: data.visits,
+            tracksHeard: data.tracksHeard,
+            albumsVisited: data.albumsVisited.length,
+            radioSessions: data.radioSessions,
+          };
+        },
+      };
+    })();
+
+    // Category 5 — the site drifts slightly the longer someone actually
+    // listens. Counts real listening time (radio playing), lives in memory
+    // only, so every fresh load starts clean. Stages are cumulative:
+    //   5 min  faint extra grain          10 min  glow a hair stronger
+    //   20 min tiny drifting symbols      30 min  one quiet line appears
+    // It also owns the glow strength, which returning visitors nudge up a
+    // little per visit (capped) — the 10-minute bump is deliberately tiny.
+    const SessionEvolution = (function () {
+      const root = document.documentElement;
+      const SYMBOL_SVGS = [
+        // dotted ring
+        '<circle cx="8" cy="8" r="5.5" stroke-dasharray="0.1 2.3"/>',
+        // therefore (three dots)
+        '<circle cx="8" cy="3.8" r=".9" fill="currentColor" stroke="none"/><circle cx="4.2" cy="11.2" r=".9" fill="currentColor" stroke="none"/><circle cx="11.8" cy="11.2" r=".9" fill="currentColor" stroke="none"/>',
+        // zigzag
+        '<polyline points="2,9 5.5,3 9,13 12.5,5 14.5,8"/>',
+        // nested triangles
+        '<polygon points="8,2 14.5,13.5 1.5,13.5"/><polygon points="8,6.5 10.8,11.3 5.2,11.3"/>',
+        // cross
+        '<line x1="3.5" y1="3.5" x2="12.5" y2="12.5"/><line x1="12.5" y1="3.5" x2="3.5" y2="12.5"/>',
+        // triangle with a dot
+        '<polygon points="8,2 14.5,13.5 1.5,13.5"/><circle cx="8" cy="10" r=".9" fill="currentColor" stroke="none"/>',
+        // three waves
+        '<path d="M2 3.5 q1.5 -2 3 0 t3 0 t3 0 t3 0"/><path d="M2 8 q1.5 -2 3 0 t3 0 t3 0 t3 0"/><path d="M2 12.5 q1.5 -2 3 0 t3 0 t3 0 t3 0"/>',
+      ];
+
+      let listened = 0;
+      let applied = 0;
+      let visitBoost = 0;
+      let sessionBoost = 0;
+
+      function applyGlow() {
+        root.style.setProperty("--glow-boost", (1 + visitBoost + sessionBoost).toFixed(3));
+      }
+
+      function placeSymbol(el) {
+        const onLeft = Math.random() < 0.5;
+        const offset = (1 + Math.random() * 4).toFixed(1) + "%";
+        el.style.left = onLeft ? offset : "";
+        el.style.right = onLeft ? "" : offset;
+        el.style.top = (8 + Math.random() * 78).toFixed(1) + "%";
+        el.style.setProperty("--dur", (16 + Math.random() * 12).toFixed(1) + "s");
+      }
+
+      function startSymbols() {
+        // needs a real cursor-and-room desktop layout; skipped on phones
+        // and for anyone who prefers reduced motion
+        if (prefersReducedMotion) return;
+        if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+        const layer = document.createElement("div");
+        layer.className = "evo-symbols";
+        layer.setAttribute("aria-hidden", "true");
+
+        SYMBOL_SVGS.forEach((inner) => {
+          const el = document.createElement("div");
+          el.className = "evo-symbol";
+          el.innerHTML =
+            '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">' +
+            inner +
+            "</svg>";
+          placeSymbol(el);
+          el.style.animationDelay = "-" + (Math.random() * 14).toFixed(1) + "s";
+          // reposition at the end of each drift, while it's fully faded out
+          el.addEventListener("animationiteration", () => placeSymbol(el));
+          layer.appendChild(el);
+        });
+
+        document.body.appendChild(layer);
+      }
+
+      function showWhisper() {
+        const whisper = document.getElementById("evoWhisper");
+        if (whisper) whisper.classList.add("is-visible");
+      }
+
+      const STAGES = [
+        { at: 300, run() { root.style.setProperty("--grain-opacity", "0.07"); } },
+        { at: 600, run() { sessionBoost = 0.07; applyGlow(); } },
+        { at: 1200, run: startSymbols },
+        { at: 1800, run: showWhisper },
+      ];
+
+      // each returning visit adds a little glow, capped so it never gets loud
+      applyGlow();
+
+      return {
+        setVisits(visits) {
+          visitBoost = Math.min(Math.max(visits - 1, 0), 10) * 0.025;
+          applyGlow();
+        },
+        add(seconds) {
+          if (!(seconds > 0)) return;
+          listened += seconds;
+          while (applied < STAGES.length && listened >= STAGES[applied].at) {
+            STAGES[applied].run();
+            applied += 1;
+          }
+        },
+        getStage: () => applied,
+        getListened: () => listened,
+      };
+    })();
+    SessionEvolution.setVisits(SiteMemory.getVisits());
+
     // shared VHS-style flicker, reused by release-link clicks and the chaos-shuffle easter egg
     function flashGlitch() {
       if (prefersReducedMotion) return;
@@ -1558,7 +2711,11 @@
         return;
       }
 
-      const steps = 2 + Math.floor(Math.random() * 3); // 2-4 flickers
+      // first-timers get the full 2-4 flickers; anyone who's been here
+      // before gets a shorter, snappier one — the site recognizes them
+      const returning = SiteMemory.getVisits() >= 2;
+      const steps = returning ? 1 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 3);
+      const stepMs = returning ? 40 : 60;
       let i = 0;
 
       function flicker() {
@@ -1569,7 +2726,7 @@
         }
         overlay.style.opacity = i % 2 === 0 ? "1" : "0.35";
         i++;
-        setTimeout(flicker, 60 + Math.random() * 90);
+        setTimeout(flicker, stepMs + Math.random() * 90);
       }
 
       setTimeout(flicker, 80);
@@ -1662,12 +2819,46 @@
       let clickCount = 0;
       let resetTimer = null;
 
-      function pulse() {
-        h1.style.transform = "scale(1.08)";
-        setTimeout(() => {
-          h1.style.transform = "scale(1)";
-        }, 150);
+      // unified per-frame title animation: a click-bump (decaying scale
+      // bump from tapping the title) and a bass-driven pulse (from the
+      // shared analyser, once music is playing) are combined into a single
+      // transform each frame, so they never fight over the same property
+      let clickBump = 0;
+      let bass = 0;
+
+      AudioReactive.onFrame((data) => {
+        bass += (AudioReactive.getBassEnergy(data) - bass) * 0.2;
+      });
+
+      function titleFrame() {
+        requestAnimationFrame(titleFrame);
+        clickBump *= 0.88;
+        const audioEl = document.getElementById("playerAudio");
+        const isPlaying = audioEl && !audioEl.paused;
+        const bassScale = isPlaying ? bass * 0.035 : 0;
+        h1.style.transform = `scale(${(1 + bassScale + clickBump).toFixed(4)})`;
       }
+      if (!prefersReducedMotion) titleFrame();
+
+      function pulse() {
+        clickBump = 0.08;
+      }
+
+      // rare, brief color-corruption flicker — "the colors occasionally break"
+      function scheduleRandomGlitch() {
+        const delay = 25000 + Math.random() * 45000;
+        setTimeout(() => {
+          if (!prefersReducedMotion) {
+            h1.style.filter =
+              "drop-shadow(-3px 0 rgba(255,45,85,.8)) drop-shadow(3px 0 rgba(45,200,255,.8)) drop-shadow(0 0 12px rgba(255,255,255,.5))";
+            setTimeout(() => {
+              h1.style.filter = "";
+            }, 160);
+          }
+          scheduleRandomGlitch();
+        }, delay);
+      }
+      if (!prefersReducedMotion) scheduleRandomGlitch();
 
       function zergRush() {
         if (prefersReducedMotion) return;
@@ -1715,7 +2906,22 @@
       const IDLE_DELAY = 20000;
       let idleTimer = null;
 
+      // someone listening to the radio isn't "idle" just because their
+      // mouse hasn't moved — check playback state before ever dimming
+      function isRadioPlaying() {
+        const audioEl = document.getElementById("playerAudio");
+        return !!(audioEl && !audioEl.paused);
+      }
+
       function setIdle(state) {
+        if (state && isRadioPlaying()) {
+          // still "busy" even without physical interaction — check again
+          // shortly instead of dimming, so playback keeps this from ever
+          // triggering, and dimming resumes normally once it's paused
+          clearTimeout(idleTimer);
+          idleTimer = setTimeout(() => setIdle(true), IDLE_DELAY);
+          return;
+        }
         document.body.classList.toggle("is-idle", state);
       }
 
@@ -1787,6 +2993,7 @@
         } catch (err) {
           /* private mode / storage disabled — UI still updates for this session */
         }
+        SiteMemory.recordAlbumVisit(href);
         applyLastPlayedUI(href);
       }
 
@@ -1805,27 +3012,299 @@
     // custom cursor (fine-pointer devices only, respects reduced motion)
     (function customCursor() {
       const cursorEl = document.getElementById("customCursor");
+      const ghostEl = document.getElementById("customCursorGhost");
       if (!cursorEl) return;
 
       if (prefersReducedMotion || !window.matchMedia("(pointer: fine)").matches) {
         cursorEl.remove();
+        if (ghostEl) ghostEl.remove();
         return;
       }
 
       document.body.classList.add("custom-cursor-active");
 
+      let targetX = -100;
+      let targetY = -100;
+
+      // Category 4 — cursor picks up a hint of whichever album's accent
+      // color is currently hovered, subtly (lower saturation/lightness than
+      // the normal hue-cycle) rather than a hard color swap
+      const ACCENT_HUES = [4, 152, 231, 275, 43]; // matches albums 1-5's existing hover accents
+      let hoveredAccentHue = null;
+
+      const realAlbums = Array.from(
+        document.querySelectorAll(".album:not(.shuffle-album):not(.unreleased-album)")
+      );
+      realAlbums.forEach((card, i) => {
+        const hue = ACCENT_HUES[i];
+        if (hue === undefined) return;
+        card.addEventListener("mouseenter", () => {
+          hoveredAccentHue = hue;
+        });
+        card.addEventListener("mouseleave", () => {
+          hoveredAccentHue = null;
+        });
+      });
+
       window.addEventListener("mousemove", (e) => {
         cursorEl.classList.add("is-active");
-        cursorEl.style.left = e.clientX + "px";
-        cursorEl.style.top = e.clientY + "px";
-        const hue = (Date.now() / 15) % 360;
-        cursorEl.style.borderColor = `hsl(${hue}, 90%, 65%)`;
+        targetX = e.clientX;
+        targetY = e.clientY;
+        cursorEl.style.left = targetX + "px";
+        cursorEl.style.top = targetY + "px";
+        if (hoveredAccentHue !== null) {
+          cursorEl.style.borderColor = `hsl(${hoveredAccentHue}, 65%, 58%)`;
+        } else {
+          const hue = (Date.now() / 15) % 360;
+          cursorEl.style.borderColor = `hsl(${hue}, 90%, 65%)`;
+        }
       });
 
       document.querySelectorAll("a, button").forEach((el) => {
         el.addEventListener("mouseenter", () => cursorEl.classList.add("is-hover"));
         el.addEventListener("mouseleave", () => cursorEl.classList.remove("is-hover"));
       });
+
+      // ghost trail — lags behind the real cursor and only becomes visible
+      // while music is actually playing, pulsing size/opacity with the bass
+      if (ghostEl) {
+        let ghostX = targetX;
+        let ghostY = targetY;
+        let bass = 0;
+
+        AudioReactive.onFrame((data) => {
+          bass += (AudioReactive.getBassEnergy(data) - bass) * 0.15;
+        });
+
+        function ghostLoop() {
+          requestAnimationFrame(ghostLoop);
+          const audioEl = document.getElementById("playerAudio");
+          const isPlaying = !!(audioEl && !audioEl.paused);
+
+          ghostX += (targetX - ghostX) * 0.16;
+          ghostY += (targetY - ghostY) * 0.16;
+          ghostEl.style.left = ghostX + "px";
+          ghostEl.style.top = ghostY + "px";
+
+          const targetOpacity = isPlaying ? 0.3 + bass * 0.35 : 0;
+          ghostEl.style.opacity = String(Math.min(targetOpacity, 0.65));
+
+          const scale = 1 + bass * 0.7;
+          ghostEl.style.width = 18 * scale + "px";
+          ghostEl.style.height = 18 * scale + "px";
+
+          const hue = (Date.now() / 15 + 150) % 360; // offset hue for a chromatic-ghost feel
+          ghostEl.style.borderColor = `hsl(${hue}, 90%, 60%)`;
+        }
+        ghostLoop();
+      }
+    })();
+
+    // Category 4 — artwork reveal: a cursor-following spotlight on each
+    // album card unmasks its actual cover art. Desktop-only by nature (it
+    // needs a real cursor to reveal anything) and skipped for reduced motion.
+    (function artworkReveal() {
+      if (prefersReducedMotion) return;
+      if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+      const cards = document.querySelectorAll(
+        ".album:not(.shuffle-album):not(.unreleased-album)"
+      );
+
+      cards.forEach((card) => {
+        const cover = card.querySelector(".cover");
+        const art = card.querySelector(".portal-art");
+        if (!cover || !art) return;
+
+        // reuse the exact image already embedded for this card's small
+        // cover thumbnail — no need to duplicate the artwork data anywhere
+        const bg = window.getComputedStyle(cover).backgroundImage;
+        if (bg && bg !== "none") art.style.backgroundImage = bg;
+
+        card.addEventListener("mousemove", (e) => {
+          const rect = card.getBoundingClientRect();
+          const mx = ((e.clientX - rect.left) / rect.width) * 100;
+          const my = ((e.clientY - rect.top) / rect.height) * 100;
+          card.style.setProperty("--mx", mx + "%");
+          card.style.setProperty("--my", my + "%");
+        });
+
+        card.addEventListener("mouseleave", () => {
+          card.style.setProperty("--mx", "50%");
+          card.style.setProperty("--my", "50%");
+        });
+      });
+    })();
+
+    // Category 4 — title glitch: any real album title containing the
+    // letter "o" briefly corrupts its o's into 0's on hover, then reverts.
+    // Titles without an "o" (STNKQLZR, u with me?, ultimate lie) simply
+    // don't have anything to trigger here — expected, not a bug.
+    (function titleGlitchOnHover() {
+      if (prefersReducedMotion) return;
+
+      document
+        .querySelectorAll(".album:not(.shuffle-album):not(.unreleased-album) h3")
+        .forEach((h3) => {
+          const original = h3.textContent;
+          if (!/o/i.test(original)) return;
+
+          let revertTimer = null;
+          h3.addEventListener("mouseenter", () => {
+            clearTimeout(revertTimer);
+            h3.textContent = original.replace(/o/gi, "0");
+            revertTimer = setTimeout(() => {
+              h3.textContent = original;
+            }, 220);
+          });
+        });
+    })();
+
+    // very slow, atmospheric particles behind the whole page — a calm ambient
+    // drift at rest, gently amplified by overall audio energy while playing
+    (function audioReactiveBackground() {
+      const canvas = document.getElementById("audioBg");
+      if (!canvas) return;
+
+      if (prefersReducedMotion) {
+        canvas.remove();
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener("resize", resize);
+
+      const PARTICLE_COUNT = 24;
+      const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: 1 + Math.random() * 2.2,
+        speed: 0.05 + Math.random() * 0.12,
+        drift: (Math.random() - 0.5) * 0.15,
+        phase: Math.random() * Math.PI * 2,
+      }));
+
+      // richer live signal than a single loudness number: separate bass/
+      // treble bands plus real beat detection, all derived from the actual
+      // playing audio frame by frame — no pre-analysis of the songs needed
+      // or possible. Thresholds are tuned low and a compression curve lifts
+      // quiet passages proportionally more than loud ones, since not every
+      // track here is bass-heavy or mixed hot.
+      let energy = 0;
+      let bass = 0;
+      let treble = 0;
+      let bassAvg = 0;
+      let energyAvg = 0;
+      let beatPulse = 0;
+
+      AudioReactive.onFrame((data) => {
+        const rawOverall = AudioReactive.getOverallEnergy(data);
+        const rawBass = AudioReactive.getBassEnergy(data);
+        const rawTreble = AudioReactive.getTrebleEnergy(data);
+
+        energy += (rawOverall - energy) * 0.1;
+        bass += (rawBass - bass) * 0.3;
+        treble += (rawTreble - treble) * 0.18;
+        bassAvg += (rawBass - bassAvg) * 0.015;
+        energyAvg += (rawOverall - energyAvg) * 0.015;
+
+        // fire a "hit" from EITHER a bass transient or a general loudness
+        // transient — a quiet, low-bass track can still have percussive or
+        // vocal accents that barely move the bass band but clearly move
+        // overall energy, and this should still register as a hit
+        const bassHit = rawBass > bassAvg * 1.18 && rawBass > 0.07;
+        const energyHit = rawOverall > energyAvg * 1.2 && rawOverall > 0.06;
+        if (bassHit || energyHit) {
+          beatPulse = 1;
+        }
+      });
+
+      function particleColor() {
+        const isLight = document.documentElement.getAttribute("data-theme") === "light";
+        return isLight ? "22, 22, 22" : "242, 242, 242";
+      }
+
+      function loop() {
+        requestAnimationFrame(loop);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        beatPulse *= 0.9; // decays fast — each real hit gets a fresh, short kick
+
+        // compress quiet passages upward without letting loud ones blow out
+        // (x^0.55 lifts a quiet 0.05 to ~0.23, but a loud 0.7 only to ~0.83)
+        const liftedEnergy = Math.pow(energy, 0.55);
+        const liftedBass = Math.pow(bass, 0.5);
+        const liftedTreble = Math.pow(treble, 0.55);
+
+        const boost = 1 + liftedEnergy * 3.4 + beatPulse * 1.5;
+        const rgb = particleColor();
+        const { mode, speedMultiplier } = ParticleController.getMode();
+
+        for (const p of particles) {
+          if (mode === "orbit") {
+            if (!p.orbitCx) {
+              p.orbitCx = p.x;
+              p.orbitCy = p.y;
+              p.orbitR = 20 + Math.random() * 40;
+              p.orbitAngle = Math.random() * Math.PI * 2;
+            }
+            p.orbitAngle += 0.008 * speedMultiplier * boost;
+            const breathingR = p.orbitR * (1 + liftedBass * 0.5);
+            p.x = p.orbitCx + Math.cos(p.orbitAngle) * breathingR;
+            p.y = p.orbitCy + Math.sin(p.orbitAngle) * breathingR;
+          } else if (mode === "jitter") {
+            p.orbitCx = null;
+            // now genuinely reactive: quieter passages barely jitter,
+            // loud/bassy moments and detected hits make it jump harder
+            const jitterChance = 0.05 * speedMultiplier * boost;
+            if (Math.random() < jitterChance) {
+              const jump = 20 * (0.6 + beatPulse * 1.5 + liftedBass * 1.1);
+              p.x += (Math.random() - 0.5) * jump;
+              p.y += (Math.random() - 0.5) * jump;
+            }
+          } else if (mode === "down") {
+            p.orbitCx = null;
+            p.y += p.speed * boost * 0.6 * speedMultiplier;
+            p.x += p.drift;
+          } else {
+            // "up" — the default, calm ambient drift
+            p.orbitCx = null;
+            p.y -= p.speed * boost * 0.6 * speedMultiplier;
+            p.x += p.drift;
+          }
+
+          if (p.y < -10) {
+            p.y = canvas.height + 10;
+            p.x = Math.random() * canvas.width;
+          }
+          if (p.y > canvas.height + 10) {
+            p.y = -10;
+            p.x = Math.random() * canvas.width;
+          }
+          if (p.x < -10) p.x = canvas.width + 10;
+          if (p.x > canvas.width + 10) p.x = -10;
+
+          const twinkle = 0.35 + 0.25 * Math.sin(Date.now() / 900 + p.phase);
+          const alpha = Math.min(
+            (0.05 + liftedEnergy * 0.24 + liftedTreble * 0.1) * twinkle + beatPulse * 0.14 + 0.04,
+            0.36
+          );
+          const radius = p.r * boost + liftedBass * 1.8;
+
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
+          ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      loop();
     })();
 
     // light/dark theme toggle
@@ -1906,32 +3385,57 @@
       const nextBtn = document.getElementById("playerNext");
       const muteBtn = document.getElementById("playerMute");
       const volumeSlider = document.getElementById("playerVolume");
+      const volumeWrap = document.getElementById("playerVolumeWrap");
+      const playerInfo = document.getElementById("playerInfo");
+      const labelEl = document.getElementById("playerLabel");
       const trackEl = document.getElementById("playerTrack");
       const albumEl = document.getElementById("playerAlbum");
       const eqEl = document.getElementById("playerEq");
       const audio = document.getElementById("playerAudio");
 
+      // fullscreen listening mode — optional; player still works fully without it
+      const fsPlayer = document.getElementById("fullscreenPlayer");
+      const fsClose = document.getElementById("fsClose");
+      const fsToggle = document.getElementById("fsToggle");
+      const fsNext = document.getElementById("fsNext");
+      const fsBackdrop = document.getElementById("fsBackdrop");
+      const fsArt = document.getElementById("fsArt");
+      const fsTrack = document.getElementById("fsTrack");
+      const fsAlbum = document.getElementById("fsAlbum");
+      const fsWaveform = document.getElementById("fsWaveform");
+      const fsLogToggle = document.getElementById("fsLogToggle");
+      const fsLog = document.getElementById("fsLog");
+      const fsLogList = document.getElementById("fsLogList");
+      const fsLogEmpty = document.getElementById("fsLogEmpty");
+
       if (!bar || !toggleBtn || !nextBtn || !muteBtn || !volumeSlider || !trackEl || !albumEl || !audio) return;
 
       const TRACKS = [
-        { file: "audio/01-i-get-high.mp3", title: "i get high", album: "from now on..." },
-        { file: "audio/02-i-feel-like-youre-the-only-one.mp3", title: "i feel like you're the only one", album: "from now on..." },
-        { file: "audio/03-in-the-sunken-place.mp3", title: "in the sunken place", album: "from now on..." },
-        { file: "audio/04-zzz.mp3", title: "zzz...", album: "from now on..." },
-        { file: "audio/05-the-seraphim.mp3", title: "the seraphim", album: "u with me?" },
-        { file: "audio/06-fake-gifted.mp3", title: "fake gifted", album: "u with me?" },
-        { file: "audio/07-stankquilizer-type-beat.mp3", title: "stankquilizer type beat", album: "u with me?" },
-        { file: "audio/08-unimagineable-probability.mp3", title: "unimagineable probability", album: "u with me?" },
-        { file: "audio/09-ignantamus.mp3", title: "ignantamus", album: "ultimate lie" },
-        { file: "audio/10-the-chops.mp3", title: "the chops", album: "ultimate lie" },
-        { file: "audio/11-life-of-the-loop.mp3", title: "life of the loop", album: "ultimate lie" },
-        { file: "audio/12-the-earth-i-scar.mp3", title: "the earth i scar", album: "ultimate lie" },
+        { file: "audio/01-i-get-high.mp3", visualGain: 3.00, title: "i get high", album: "from now on...",
+          mood: { hue: 40, opacity: 0.05, particleMode: "up", speed: 0.6 } },
+        { file: "audio/02-i-feel-like-youre-the-only-one.mp3", visualGain: 1.69, title: "i feel like you're the only one", album: "from now on...",
+          mood: { hue: 350, opacity: 0.04, particleMode: "up", speed: 0.4 } },
+        { file: "audio/03-in-the-sunken-place.mp3", visualGain: 2.75, title: "in the sunken place", album: "from now on...",
+          mood: { hue: 230, opacity: 0.06, particleMode: "down", speed: 0.5 } },
+        { file: "audio/04-zzz.mp3", visualGain: 1.68, title: "zzz...", album: "from now on...",
+          mood: { hue: 200, opacity: 0.02, particleMode: "up", speed: 0.15 } },
+        { file: "audio/05-the-seraphim.mp3", visualGain: 1.00, title: "the seraphim", album: "u with me?",
+          mood: { hue: 45, opacity: 0.07, particleMode: "up", speed: 1.3 } },
+        { file: "audio/06-fake-gifted.mp3", visualGain: 1.00, title: "fake gifted", album: "u with me?",
+          mood: { hue: 210, opacity: 0.05, particleMode: "up", speed: 1.0 } },
+        { file: "audio/07-stankquilizer-type-beat.mp3", visualGain: 1.00, title: "stankquilizer type beat", album: "u with me?",
+          mood: { hue: 0, opacity: 0.05, particleMode: "orbit", speed: 1.0, rgbCycle: true } },
+        { file: "audio/08-unimagineable-probability.mp3", visualGain: 1.00, title: "unimagineable probability", album: "u with me?",
+          mood: { hue: 270, opacity: 0.05, particleMode: "jitter", speed: 1.0 } },
+        { file: "audio/09-ignantamus.mp3", visualGain: 1.00, title: "ignantamus", album: "ultimate lie",
+          mood: { hue: 10, opacity: 0.04, particleMode: "up", speed: 0.15 } },
+        { file: "audio/10-the-chops.mp3", visualGain: 1.00, title: "the chops", album: "ultimate lie",
+          mood: { hue: 35, opacity: 0.06, particleMode: "up", speed: 1.6 } },
+        { file: "audio/11-life-of-the-loop.mp3", visualGain: 1.00, title: "life of the loop", album: "ultimate lie",
+          mood: { hue: 175, opacity: 0.05, particleMode: "orbit", speed: 0.5 } },
+        { file: "audio/12-the-earth-i-scar.mp3", visualGain: 1.00, title: "the earth i scar", album: "ultimate lie",
+          mood: { hue: 5, opacity: 0.07, particleMode: "down", speed: 1.8 } },
       ];
-
-      // expose the catalog to the central memory engine without coupling the
-      // engine to the player scope; future native album pages can replace this
-      // catalog with the full site library.
-      window.__stankTracks = TRACKS;
 
       // reuses the exact same embedded artwork already used on the album
       // cards, keyed by album name, for the player button's circular backdrop
@@ -1946,45 +3450,270 @@
       let hasStarted = false;
 
       function shuffledIndices(avoidFirst) {
-        const indices = TRACKS.map((_, i) => i);
-        const memory = window.__stankMemory;
-
-        // Adaptive weighted shuffle: memory influences the order, but never
-        // removes randomness. A small exploration floor prevents the radio
-        // from becoming an echo chamber.
-        if (memory && typeof memory.weightTrackOrder === "function") {
-          const ordered = memory.weightTrackOrder(indices, TRACKS, avoidFirst);
-          if (Array.isArray(ordered) && ordered.length === indices.length) return ordered;
-        }
-
-        for (let i = indices.length - 1; i > 0; i--) {
+        const arr = TRACKS.map((_, i) => i);
+        for (let i = arr.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [indices[i], indices[j]] = [indices[j], indices[i]];
+          [arr[i], arr[j]] = [arr[j], arr[i]];
         }
-        if (avoidFirst !== undefined && indices[0] === avoidFirst && indices.length > 1) {
-          const swapAt = 1 + Math.floor(Math.random() * (indices.length - 1));
-          [indices[0], indices[swapAt]] = [indices[swapAt], indices[0]];
+        // avoid immediately repeating the last track across a cycle boundary
+        if (avoidFirst !== undefined && arr[0] === avoidFirst && arr.length > 1) {
+          const swapAt = 1 + Math.floor(Math.random() * (arr.length - 1));
+          [arr[0], arr[swapAt]] = [arr[swapAt], arr[0]];
         }
-        return indices;
+        return arr;
       }
 
       function setEqPlaying(isPlaying) {
         if (eqEl) eqEl.classList.toggle("is-playing", isPlaying);
       }
 
+      // single source of truth for "is it playing" UI — used by every
+      // trigger (main button, fullscreen button, pause event) so the main
+      // bar and fullscreen mode can never drift out of sync with each other
+      function setPlayingState(isPlaying) {
+        toggleBtn.classList.toggle("is-playing", isPlaying);
+        toggleBtn.setAttribute("aria-label", isPlaying ? "pause music" : "play music");
+        setEqPlaying(isPlaying);
+        if (fsToggle) {
+          fsToggle.classList.toggle("is-playing", isPlaying);
+          fsToggle.setAttribute("aria-label", isPlaying ? "pause music" : "play music");
+        }
+
+        // track-specific site mood — only active while actually playing,
+        // reverts to the plain time-of-day mood the instant it's paused
+        if (isPlaying) {
+          const currentTrack = TRACKS[queue[queueIndex]];
+          if (currentTrack && currentTrack.mood) {
+            MoodController.setTrackMood(currentTrack.mood);
+            ParticleController.setMode(currentTrack.mood.particleMode, currentTrack.mood.speed);
+          }
+        } else {
+          MoodController.clearTrackMood();
+          ParticleController.clearMode();
+        }
+      }
+
+      // real equalizer bars, fed by the shared analyser. If Web Audio setup
+      // ever fails (init() returns false), this class never gets added and
+      // the original CSS-only fake animation keeps working exactly as before.
+      const eqBars = eqEl ? Array.from(eqEl.querySelectorAll("span")) : [];
+      if (eqBars.length) {
+        AudioReactive.onFrame((data) => {
+          if (!eqEl.classList.contains("is-audio-reactive")) return;
+          const bars = AudioReactive.getBars(data, eqBars.length);
+          for (let i = 0; i < eqBars.length; i++) {
+            const scale = Math.max(0.12, Math.min(1, bars[i] * 1.6));
+            eqBars[i].style.transform = `scaleY(${scale})`;
+          }
+        });
+      }
+
+      // bigger waveform inside fullscreen mode, same shared data, only
+      // updates while fullscreen is actually open (cheap when it's not)
+      const fsBars = fsWaveform ? Array.from(fsWaveform.querySelectorAll("span")) : [];
+      if (fsBars.length) {
+        AudioReactive.onFrame((data) => {
+          if (!fsPlayer || !fsPlayer.classList.contains("is-open")) return;
+          const bars = AudioReactive.getBars(data, fsBars.length);
+          for (let i = 0; i < fsBars.length; i++) {
+            const scale = Math.max(0.08, Math.min(1, bars[i] * 1.7));
+            fsBars[i].style.transform = `scaleY(${scale})`;
+          }
+        });
+      }
+
+      // gentle "breathing" scale on the big fullscreen art, driven by bass
+      if (fsArt) {
+        let fsBass = 0;
+        AudioReactive.onFrame((data) => {
+          fsBass += (AudioReactive.getBassEnergy(data) - fsBass) * 0.15;
+        });
+        (function fsArtPulse() {
+          requestAnimationFrame(fsArtPulse);
+          if (!fsPlayer || !fsPlayer.classList.contains("is-open")) return;
+          const isPlaying = !audio.paused;
+          const scale = 1 + (isPlaying ? fsBass * 0.06 : 0);
+          fsArt.style.transform = `scale(${scale.toFixed(4)})`;
+        })();
+      }
+
+      function enableAudioReactivity() {
+        const ok = AudioReactive.init(audio);
+        AudioReactive.resume();
+        if (ok && eqEl) eqEl.classList.add("is-audio-reactive");
+      }
+
       function updateNowPlaying(track) {
         trackEl.textContent = track.title;
         albumEl.textContent = track.album;
+
+        if (fsTrack) fsTrack.textContent = track.title;
+        if (fsAlbum) fsAlbum.textContent = track.album;
 
         const coverUrl = ALBUM_COVERS[track.album];
         if (coverUrl) {
           toggleBtn.style.backgroundImage = coverUrl;
           toggleBtn.classList.add("has-cover");
+          if (fsArt) fsArt.style.backgroundImage = coverUrl;
+          if (fsBackdrop) fsBackdrop.style.backgroundImage = coverUrl;
         }
+      }
+
+      // "on air" transmission label — plain "now playing" until the radio
+      // actually starts, then a pulsing live dot plus a slowly drifting
+      // frequency number, like a signal that's never quite settled
+      let freq = 103.7;
+      let freqTimer = null;
+
+      function driftFrequency() {
+        freq += (Math.random() - 0.5) * 0.3;
+        freq = Math.max(103.2, Math.min(103.9, freq));
+        const freqEl = document.getElementById("playerFreq");
+        if (freqEl) freqEl.textContent = freq.toFixed(1);
+        freqTimer = setTimeout(driftFrequency, 2200 + Math.random() * 2600);
+      }
+
+      function goLiveLabel() {
+        if (!labelEl) return;
+        labelEl.innerHTML =
+          '<span class="live-dot" aria-hidden="true"></span>live &middot; fm <span id="playerFreq">103.7</span>' +
+          '<span class="player-signal" id="playerSignal" aria-hidden="true"><span class="transmission-value">transmission --/12</span><span class="signal-value">signal --%</span></span>';
+        if (!prefersReducedMotion) driftFrequency();
+      }
+
+      // "signal lost" — a brief on-brand pause between tracks rather than
+      // an instant cut; skipped for reduced-motion (no gratuitous delay)
+      function withSignalLost(next) {
+        if (prefersReducedMotion) {
+          next();
+          return;
+        }
+        trackEl.textContent = "reconnecting...";
+        albumEl.textContent = "signal lost";
+        if (fsTrack) fsTrack.textContent = "reconnecting...";
+        if (fsAlbum) fsAlbum.textContent = "signal lost";
+        flashGlitch();
+        setTimeout(next, 420);
+      }
+
+      // ---- Category 5: the radio's memory and moods ----
+      const idleSubtitle = albumEl.textContent;
+      let idleTrackText = trackEl.textContent;
+
+      // returning visitors: the idle screen quietly recognizes them
+      (function returningVisitorIdleText() {
+        const visits = SiteMemory.getVisits();
+        if (visits >= 2 && labelEl) labelEl.textContent = "signal remembered";
+        if (visits >= 5) idleTrackText = "the noise noticed you were gone";
+        else if (visits >= 3) idleTrackText = "you're back. still silent.";
+        trackEl.textContent = idleTrackText;
+      })();
+
+      function currentTrackInfo() {
+        return hasStarted && queueIndex >= 0 ? TRACKS[queue[queueIndex]] : null;
+      }
+
+      // briefly swap the text on the radio's title and/or subtitle line, then
+      // put things back. Each line restores only if it is still showing our
+      // message — if a track started (or a transition took over) meanwhile,
+      // it's left alone instead of being overwritten with stale text.
+      let trackFlashTimer = null;
+      let albumFlashTimer = null;
+      function flashLines(trackText, albumText, ms) {
+        if (trackText != null) {
+          trackEl.textContent = trackText;
+          clearTimeout(trackFlashTimer);
+          trackFlashTimer = setTimeout(() => {
+            if (trackEl.textContent !== trackText) return;
+            const info = currentTrackInfo();
+            trackEl.textContent = info ? info.title : idleTrackText;
+          }, ms);
+        }
+        if (albumText != null) {
+          albumEl.textContent = albumText;
+          clearTimeout(albumFlashTimer);
+          albumFlashTimer = setTimeout(() => {
+            if (albumEl.textContent !== albumText) return;
+            const info = currentTrackInfo();
+            albumEl.textContent = info ? info.album : idleSubtitle;
+          }, ms);
+        }
+      }
+
+      function hasUrlParam(name) {
+        try {
+          return new URLSearchParams(window.location.search).has(name);
+        } catch (e) {
+          return false;
+        }
+      }
+
+      // the visitor's own clock, 12-hour, always the real hour AND minute
+      function formatClock(d) {
+        const h = d.getHours();
+        const m = String(d.getMinutes()).padStart(2, "0");
+        return (h % 12 === 0 ? 12 : h % 12) + ":" + m + " " + (h >= 12 ? "pm" : "am");
+      }
+
+      // between 12:00 am and 5:59 am on the visitor's device, once per
+      // session. Split across the radio's two text lines so the full sentence
+      // still fits on a phone. (?latenight forces it at any hour, for testing.)
+      function maybeShowLateNightLine() {
+        const now = new Date();
+        if (!hasUrlParam("latenight")) {
+          if (now.getHours() >= 6) return;
+          if (SiteMemory.hasShownLateNight()) return;
+          SiteMemory.markLateNightShown();
+        }
+        flashLines("it's " + formatClock(now) + ",", "you should probably be asleep", 6500);
+      }
+
+      if (SiteMemory.wasReset()) {
+        setTimeout(() => flashLines("memory cleared", null, 3200), 1400);
+      }
+      setTimeout(maybeShowLateNightLine, SiteMemory.wasReset() ? 5200 : 2600);
+
+      // this session's transmissions — in memory only, gone on refresh
+      const sessionLog = [];
+      function logTrackHeard(track) {
+        if (!track || !fsLogList) return;
+        sessionLog.push(track);
+
+        const li = document.createElement("li");
+        const num = document.createElement("span");
+        num.className = "fs-log-num";
+        num.textContent = String(sessionLog.length).padStart(2, "0");
+
+        const body = document.createElement("span");
+        body.textContent = track.title;
+        const album = document.createElement("span");
+        album.className = "fs-log-album";
+        album.textContent = track.album;
+        body.appendChild(album);
+
+        li.appendChild(num);
+        li.appendChild(body);
+        fsLogList.appendChild(li);
+
+        if (fsLogEmpty) fsLogEmpty.style.display = "none";
+        if (fsLog) fsLog.scrollTop = fsLog.scrollHeight;
+      }
+
+      // a track counts as "heard" after 10 seconds of real playback, so
+      // skipping through the queue doesn't inflate the counters or the log
+      let lastTime = 0;
+      let trackPlayed = 0;
+      let trackCounted = false;
+      function resetTrackTracking() {
+        lastTime = 0;
+        trackPlayed = 0;
+        trackCounted = false;
       }
 
       function loadAndPlay(trackIndex) {
         const track = TRACKS[trackIndex];
+        resetTrackTracking();
+        AudioReactive.resetCalibration(track.visualGain);
         audio.src = track.file;
         updateNowPlaying(track);
         const playPromise = audio.play();
@@ -1998,9 +3727,7 @@
 
       function playCurrent() {
         loadAndPlay(queue[queueIndex]);
-        toggleBtn.classList.add("is-playing");
-        toggleBtn.setAttribute("aria-label", "pause music");
-        setEqPlaying(true);
+        setPlayingState(true);
       }
 
       function advance() {
@@ -2010,7 +3737,7 @@
           queue = shuffledIndices(lastPlayed);
           queueIndex = 0;
         }
-        playCurrent();
+        withSignalLost(playCurrent);
       }
 
       function startFresh() {
@@ -2018,37 +3745,80 @@
         queueIndex = 0;
         hasStarted = true;
         toggleBtn.classList.add("is-started");
+        SiteMemory.recordRadioSession();
+        enableAudioReactivity(); // must happen inside this click handler (user gesture)
+        goLiveLabel();
         playCurrent();
       }
 
-      toggleBtn.addEventListener("click", () => {
+      function togglePlayPause() {
         if (!hasStarted) {
           startFresh();
           return;
         }
         if (audio.paused) {
+          AudioReactive.resume();
           const playPromise = audio.play();
           if (playPromise && typeof playPromise.catch === "function") {
             playPromise.catch(() => {});
           }
-          toggleBtn.classList.add("is-playing");
-          toggleBtn.setAttribute("aria-label", "pause music");
-          setEqPlaying(true);
+          setPlayingState(true);
         } else {
           audio.pause();
-          toggleBtn.classList.remove("is-playing");
-          toggleBtn.setAttribute("aria-label", "play music");
-          setEqPlaying(false);
+          setPlayingState(false);
         }
-      });
+      }
 
-      nextBtn.addEventListener("click", () => {
+      function goNext() {
         if (!hasStarted) {
           startFresh();
           return;
         }
         advance();
-      });
+      }
+
+      toggleBtn.addEventListener("click", togglePlayPause);
+      nextBtn.addEventListener("click", goNext);
+      if (fsToggle) fsToggle.addEventListener("click", togglePlayPause);
+      if (fsNext) fsNext.addEventListener("click", goNext);
+
+      // fullscreen open/close — opens on tapping the track info, closes via
+      // the X button, Escape, or tapping the blurred backdrop itself
+      if (fsPlayer) {
+        function openFullscreen() {
+          if (!hasStarted) return;
+          fsPlayer.classList.add("is-open");
+          fsPlayer.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        }
+
+        function closeFullscreen() {
+          fsPlayer.classList.remove("is-open");
+          fsPlayer.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+          if (fsLog) {
+            fsLog.classList.remove("is-open");
+            fsLog.setAttribute("aria-hidden", "true");
+          }
+          if (fsLogToggle) fsLogToggle.setAttribute("aria-expanded", "false");
+        }
+
+        if (playerInfo) {
+          playerInfo.style.cursor = "pointer";
+          playerInfo.addEventListener("click", openFullscreen);
+        }
+        if (fsClose) fsClose.addEventListener("click", closeFullscreen);
+
+        fsPlayer.addEventListener("click", (e) => {
+          if (e.target === fsPlayer) closeFullscreen();
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && fsPlayer.classList.contains("is-open")) {
+            closeFullscreen();
+          }
+        });
+      }
 
       // volume is the single source of truth (no separate .muted flag) —
       // the icon gives a quick on/off, the slider gives real level control,
@@ -2063,6 +3833,21 @@
         volumeSlider.value = String(audio.volume);
       }
 
+      // the popup shows on hover/focus via pure CSS already (see :hover /
+      // :focus-within) — this just handles touch devices, where there's no
+      // hover: a tap opens it, it stays open while you interact, and it
+      // auto-closes after a short idle window or a tap elsewhere
+      let popupHideTimer = null;
+
+      function openPopupTemporarily() {
+        if (!volumeWrap) return;
+        volumeWrap.classList.add("is-open");
+        clearTimeout(popupHideTimer);
+        popupHideTimer = setTimeout(() => {
+          volumeWrap.classList.remove("is-open");
+        }, 2500);
+      }
+
       muteBtn.addEventListener("click", () => {
         if (audio.volume > 0) {
           lastVolume = audio.volume;
@@ -2071,6 +3856,7 @@
           audio.volume = lastVolume > 0 ? lastVolume : 1;
         }
         syncMuteUI();
+        openPopupTemporarily();
       });
 
       volumeSlider.addEventListener("input", () => {
@@ -2078,6 +3864,50 @@
         audio.volume = isNaN(value) ? 1 : value;
         if (audio.volume > 0) lastVolume = audio.volume;
         syncMuteUI();
+        openPopupTemporarily();
+      });
+
+      if (volumeWrap) {
+        document.addEventListener("click", (e) => {
+          if (!volumeWrap.contains(e.target)) {
+            clearTimeout(popupHideTimer);
+            volumeWrap.classList.remove("is-open");
+          }
+        });
+      }
+
+      if (fsLogToggle && fsLog) {
+        fsLogToggle.addEventListener("click", () => {
+          const open = fsLog.classList.toggle("is-open");
+          fsLog.setAttribute("aria-hidden", String(!open));
+          fsLogToggle.setAttribute("aria-expanded", String(open));
+        });
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          AudioReactive.stop();
+        } else if (!audio.paused) {
+          AudioReactive.start();
+          AudioReactive.resume();
+        }
+      });
+
+      audio.addEventListener("timeupdate", () => {
+        const t = audio.currentTime;
+        const delta = t - lastTime;
+        lastTime = t;
+        // only count ordinary forward playback — ignore track switches,
+        // seeks, and anything paused
+        if (audio.paused || !(delta > 0 && delta < 1.5)) return;
+        SessionEvolution.add(delta);
+        trackPlayed += delta;
+        if (!trackCounted && trackPlayed >= 10) {
+          trackCounted = true;
+          SiteMemory.recordTrackHeard();
+          const info = currentTrackInfo();
+          if (info) logTrackHeard(info);
+        }
       });
 
       audio.addEventListener("ended", () => {
@@ -2086,43 +3916,9 @@
 
       audio.addEventListener("pause", () => {
         if (hasStarted && audio.currentTime > 0 && !audio.ended) {
-          toggleBtn.classList.remove("is-playing");
-          toggleBtn.setAttribute("aria-label", "play music");
-          setEqPlaying(false);
+          setPlayingState(false);
         }
       });
-    })();
-
-    // time-of-day mood — subtle hue shift based on the visitor's local clock.
-    // opacity is capped low across the board (0.012-0.045) specifically so
-    // daytime visitors never get hit with a bright/saturated wash.
-    (function timeOfDayMood() {
-      const overlay = document.getElementById("moodOverlay");
-      if (!overlay) return;
-
-      function applyMood() {
-        const hour = new Date().getHours();
-        let hue, opacity;
-
-        if (hour >= 22 || hour < 5) {
-          hue = 235; opacity = 0.045;     // late night — cool, a touch richer
-        } else if (hour < 8) {
-          hue = 25;  opacity = 0.02;      // early morning — soft, barely there
-        } else if (hour < 17) {
-          hue = 200; opacity = 0.012;     // daytime — kept minimal on purpose
-        } else if (hour < 20) {
-          hue = 15;  opacity = 0.03;      // dusk — warm amber
-        } else {
-          hue = 265; opacity = 0.04;      // evening — cool violet
-        }
-
-        overlay.style.background =
-          `radial-gradient(circle at 50% 0%, hsl(${hue}, 55%, 50%), transparent 70%)`;
-        overlay.style.opacity = String(opacity);
-      }
-
-      applyMood();
-      setInterval(applyMood, 30 * 60 * 1000);
     })();
 
     // tab-title trick — after a while away, the title calls you back
@@ -2142,450 +3938,6 @@
           document.title = originalTitle;
         }
       });
-    })();
-
-    // category 5 — session memory / adaptation / evolution
-    // One client-side memory engine powers the site's adaptive behavior.
-    (function adaptiveMemory() {
-      const KEY = "stankquilizer_memory_v3";
-      const DAY = 86400000;
-      const now = Date.now();
-      const resetBtn = document.getElementById("memoryReset");
-      const audio = document.getElementById("playerAudio");
-      const titleEl = document.querySelector("header h1");
-      const albumLinks = Array.from(document.querySelectorAll(".album:not(.shuffle-album) .album-link[href]"));
-      const shuffleBtn = document.getElementById("shuffleBtn");
-      const themeBtn = document.getElementById("themeToggle");
-
-      const TRACK_COUNT = Array.isArray(window.__stankTracks) ? window.__stankTracks.length : 12;
-      const defaultTracks = Array.from({ length: TRACK_COUNT }, (_, i) => ({ title: String(i), album: "" }));
-      const catalog = () => Array.isArray(window.__stankTracks) ? window.__stankTracks : defaultTracks;
-
-      const fresh = () => ({
-        version: 3,
-        createdAt: now,
-        lastSeen: now,
-        visits: 0,
-        lives: 1,
-        previousLives: 0,
-        relationship: 0,
-        completed: false,
-        completionShown: false,
-        session: {
-          startedAt: now,
-          lastActivity: now,
-          plays: 0,
-          skips: 0,
-          repeats: 0,
-          albumViews: 0,
-          interactions: 0,
-          minutes: 0,
-          temperature: 20,
-          type: "new"
-        },
-        listening: {
-          tracks: {},
-          albums: {},
-          avoided: {},
-          lastTrack: null,
-          recent: []
-        },
-        behavior: {
-          radio: 0,
-          exploration: 0,
-          repetition: 0,
-          completion: 0,
-          interaction: 0,
-          quiet: 0,
-          chaos: 0
-        },
-        discoveries: {
-          radio: false,
-          multipleTracks: false,
-          fullRadioCycle: false,
-          album: false,
-          multipleAlbums: false,
-          shuffle: false,
-          title: false,
-          theme: false,
-          share: false,
-          returnVisit: false,
-          lateNight: false,
-          idle: false,
-          allTracks: false,
-          deepMemory: false,
-          rediscovery: false,
-          completion: false
-        },
-        ghosts: [],
-        log: []
-      });
-
-      function load() {
-        try {
-          const raw = localStorage.getItem(KEY);
-          if (!raw) return fresh();
-          const parsed = JSON.parse(raw);
-          const base = fresh();
-          return merge(base, parsed);
-        } catch (_) {
-          return fresh();
-        }
-      }
-
-      function merge(base, value) {
-        if (!value || typeof value !== "object") return base;
-        for (const key of Object.keys(base)) {
-          if (value[key] === undefined) continue;
-          if (base[key] && typeof base[key] === "object" && !Array.isArray(base[key]) && value[key] && typeof value[key] === "object" && !Array.isArray(value[key])) {
-            base[key] = merge(base[key], value[key]);
-          } else {
-            base[key] = value[key];
-          }
-        }
-        return base;
-      }
-
-      let memory = load();
-      const returning = memory.visits > 0;
-      memory.visits += 1;
-      memory.relationship = Math.min(1, (memory.relationship || 0) + (returning ? 0.035 : 0.18));
-      memory.discoveries.returnVisit = returning;
-      memory.session.startedAt = now;
-      memory.session.lastActivity = now;
-      if (returning) memory.session.temperature = Math.max(0, memory.session.temperature - 4);
-
-      // Memory decay keeps old habits influential without making them permanent.
-      const daysAway = Math.max(0, (now - (memory.lastSeen || now)) / DAY);
-      const decay = Math.pow(0.985, Math.min(daysAway, 180));
-      for (const bucket of [memory.listening.tracks, memory.listening.albums, memory.listening.avoided]) {
-        Object.keys(bucket).forEach(k => { bucket[k] *= decay; if (bucket[k] < 0.02) delete bucket[k]; });
-      }
-
-      function save() {
-        memory.lastSeen = Date.now();
-        try { localStorage.setItem(KEY, JSON.stringify(memory)); } catch (_) {}
-      }
-
-      function log(event, data = {}) {
-        memory.log.push({ event, at: Date.now(), ...data });
-        if (memory.log.length > 120) memory.log = memory.log.slice(-120);
-      }
-
-      function touch(amount = 1) {
-        memory.session.lastActivity = Date.now();
-        memory.session.interactions += amount;
-        memory.behavior.interaction = Math.min(1, memory.behavior.interaction + 0.006 * amount);
-        memory.session.temperature = Math.max(0, Math.min(100, memory.session.temperature + amount * 0.5));
-      }
-
-      function trackKey(track, index) {
-        return String(index) + "::" + String(track?.title || "track");
-      }
-
-      function albumKey(album) { return String(album || "unknown"); }
-
-      function recordTrack(index, reason = "play") {
-        const tracks = catalog() || defaultTracks;
-        const track = tracks[index] || defaultTracks[index] || { title: String(index), album: "" };
-        const key = trackKey(track, index);
-        const old = memory.listening.tracks[key] || 0;
-        memory.listening.tracks[key] = Math.min(40, old + (reason === "complete" ? 1.25 : 0.5));
-        const album = albumKey(track.album);
-        memory.listening.albums[album] = Math.min(60, (memory.listening.albums[album] || 0) + 0.75);
-        memory.listening.lastTrack = index;
-        memory.listening.recent = [index, ...memory.listening.recent.filter(x => x !== index)].slice(0, 8);
-        memory.session.plays += 1;
-        memory.behavior.radio = Math.min(1, memory.behavior.radio + 0.025);
-        memory.session.temperature = Math.max(0, memory.session.temperature - 1);
-        if (old > 1.5) memory.session.repeats += 1;
-        if (memory.session.repeats > 2) memory.behavior.repetition = Math.min(1, memory.behavior.repetition + 0.04);
-        if (reason === "complete") memory.behavior.completion = Math.min(1, memory.behavior.completion + 0.035);
-        memory.discoveries.radio = true;
-        memory.discoveries.multipleTracks = Object.keys(memory.listening.tracks).length >= 2;
-        if (Object.keys(memory.listening.tracks).length >= Math.max(4, Math.ceil(tracks.length * 0.75))) memory.discoveries.allTracks = true;
-        if (memory.session.plays >= tracks.length) memory.discoveries.fullRadioCycle = true;
-        touch(0.2);
-        log("track", { index, reason });
-        evaluate();
-        save();
-      }
-
-      function recordSkip(index) {
-        const tracks = catalog() || defaultTracks;
-        const track = tracks[index] || defaultTracks[index] || { title: String(index) };
-        const key = trackKey(track, index);
-        memory.listening.avoided[key] = Math.min(20, (memory.listening.avoided[key] || 0) + 1);
-        memory.session.skips += 1;
-        memory.behavior.exploration = Math.min(1, memory.behavior.exploration + 0.02);
-        memory.behavior.chaos = Math.min(1, memory.behavior.chaos + 0.015);
-        memory.session.temperature = Math.min(100, memory.session.temperature + 4);
-        touch(1);
-        log("skip", { index });
-        save();
-      }
-
-      function recordAlbum(name) {
-        const key = albumKey(name);
-        memory.listening.albums[key] = Math.min(60, (memory.listening.albums[key] || 0) + 1.5);
-        memory.session.albumViews += 1;
-        memory.behavior.exploration = Math.min(1, memory.behavior.exploration + 0.03);
-        memory.discoveries.album = true;
-        memory.discoveries.multipleAlbums = Object.keys(memory.listening.albums).length >= 2;
-        touch(1);
-        log("album", { name: key });
-        evaluate();
-        save();
-      }
-
-      function sessionType() {
-        const s = memory.session;
-        if (s.skips >= 5 && s.skips > s.plays * 0.6) return "chaos";
-        if (s.repeats >= 3) return "repeater";
-        if (s.albumViews >= 3) return "collector";
-        if (s.plays >= 3 && s.interactions < 5) return "lurker";
-        if (s.plays >= 2 && s.skips >= 2) return "explorer";
-        if (memory.behavior.quiet > 0.55) return "sleeper";
-        return returning ? "familiar" : "new";
-      }
-
-      function evaluate() {
-        const hour = new Date().getHours();
-        memory.discoveries.lateNight = hour >= 23 || hour < 5;
-        memory.discoveries.deepMemory = memory.visits >= 3 || memory.relationship >= 0.3;
-        memory.session.type = sessionType();
-        const visited = Object.keys(memory.listening.tracks).length;
-        const core = [
-          memory.discoveries.radio,
-          memory.discoveries.multipleTracks,
-          memory.discoveries.album,
-          memory.discoveries.multipleAlbums,
-          memory.discoveries.shuffle,
-          memory.discoveries.title,
-          memory.discoveries.theme,
-          memory.discoveries.returnVisit,
-          memory.discoveries.allTracks,
-          memory.discoveries.deepMemory,
-          memory.discoveries.rediscovery,
-          memory.discoveries.lateNight
-        ].filter(Boolean).length;
-        memory.discoveries.completion = core >= 10 || (visited >= Math.max(4, Math.ceil((catalog() || defaultTracks).length * 0.8)) && memory.visits >= 5);
-        if (memory.discoveries.completion) {
-          memory.completed = true;
-          if (!memory.completionShown) {
-            memory.completionShown = true;
-            log("completion");
-          }
-          if (resetBtn) resetBtn.hidden = false;
-        }
-      }
-
-      function weightTrackOrder(indices, tracks, avoidFirst) {
-        const pool = indices.slice();
-        const output = [];
-        const explore = 0.18 + memory.behavior.exploration * 0.18 + memory.behavior.chaos * 0.12;
-        while (pool.length) {
-          let total = 0;
-          const weights = pool.map(index => {
-            const track = tracks[index] || {};
-            const key = trackKey(track, index);
-            const familiarity = memory.listening.tracks[key] || 0;
-            const avoidance = memory.listening.avoided[key] || 0;
-            const album = memory.listening.albums[albumKey(track.album)] || 0;
-            const recentPenalty = memory.listening.recent.includes(index) ? 0.35 : 1;
-            const rediscovery = familiarity > 0 && familiarity < 2 ? 1.25 : 1;
-            const antiEcho = 1 + explore;
-            const weight = Math.max(0.12, (1 + familiarity * 0.18 + album * 0.03) * recentPenalty * rediscovery * antiEcho / (1 + avoidance * 0.45));
-            total += weight;
-            return { index, weight };
-          });
-          let roll = Math.random() * total;
-          let chosen = weights[weights.length - 1].index;
-          for (const item of weights) {
-            roll -= item.weight;
-            if (roll <= 0) { chosen = item.index; break; }
-          }
-          const pos = pool.indexOf(chosen);
-          pool.splice(pos, 1);
-          output.push(chosen);
-        }
-        if (avoidFirst !== undefined && output.length > 1 && output[0] === avoidFirst) {
-          [output[0], output[1]] = [output[1], output[0]];
-        }
-        return output;
-      }
-
-      function markRediscovery(index) {
-        const track = (catalog() || defaultTracks)[index];
-        if (!track) return;
-        const key = trackKey(track, index);
-        const last = memory.listening.recent.indexOf(index);
-        if (last === -1 && memory.listening.tracks[key]) {
-          memory.discoveries.rediscovery = true;
-          log("rediscovery", { index });
-        }
-      }
-
-      function applyAtmosphere() {
-        const type = memory.session.type;
-        const t = memory.session.temperature;
-        document.documentElement.style.setProperty("--memory-intensity", String(Math.min(1, 0.55 + t / 220)));
-        document.body.dataset.memoryState = type;
-        document.body.classList.toggle("memory-resting", memory.discoveries.completion);
-        if (type === "chaos") document.body.classList.add("memory-chaotic");
-        else document.body.classList.remove("memory-chaotic");
-      }
-
-      function reset(kind = "rebirth") {
-        const oldLives = memory.lives || 1;
-        if (kind === "soft") {
-          memory.session = fresh().session;
-          memory.session.startedAt = Date.now();
-          memory.session.type = "resting";
-          memory.completed = false;
-          memory.completionShown = false;
-          memory.discoveries.completion = false;
-        } else {
-          const next = fresh();
-          next.lives = oldLives + 1;
-          next.previousLives = oldLives;
-          next.ghosts = [{ life: oldLives, relationship: memory.relationship, visits: memory.visits, completed: memory.completed }].concat(memory.ghosts || []).slice(0, 8);
-          memory = next;
-        }
-        save();
-        document.body.classList.add("memory-resting");
-        flashGlitch();
-        if (resetBtn) resetBtn.hidden = true;
-        setTimeout(() => location.reload(), 700);
-      }
-
-      // Public bridge used by the existing player and future album/song pages.
-      window.__stankMemory = {
-        recordTrack,
-        recordSkip,
-        recordAlbum,
-        weightTrackOrder,
-        markRediscovery,
-        touch,
-        get: () => memory,
-        reset,
-        evaluate
-      };
-
-      // Existing release links become memory events without changing navigation.
-      albumLinks.forEach(link => link.addEventListener("click", () => {
-        const album = link.closest(".album");
-        const name = album?.querySelector("h3")?.textContent?.trim() || link.textContent.trim();
-        recordAlbum(name);
-      }));
-
-      if (shuffleBtn) shuffleBtn.addEventListener("click", () => {
-        memory.discoveries.shuffle = true;
-        memory.behavior.exploration = Math.min(1, memory.behavior.exploration + 0.08);
-        touch(1);
-        log("shuffle");
-        evaluate(); save();
-      });
-
-      if (titleEl) titleEl.addEventListener("click", () => {
-        memory.discoveries.title = true;
-        memory.behavior.chaos = Math.min(1, memory.behavior.chaos + 0.03);
-        touch(1); evaluate(); save();
-      });
-
-      if (themeBtn) themeBtn.addEventListener("click", () => {
-        memory.discoveries.theme = true;
-        touch(1); evaluate(); save();
-      });
-
-      document.querySelectorAll('[data-share], .share-btn, [aria-label*="share" i]').forEach(el => {
-        el.addEventListener("click", () => { memory.discoveries.share = true; touch(1); evaluate(); save(); });
-      });
-
-      let lastTrack = null;
-      let lastTime = 0;
-      if (audio) {
-        audio.addEventListener("play", () => {
-          const tracks = catalog() || defaultTracks;
-          const index = tracks.findIndex(t => t.file === audio.src || String(t.file || "").endsWith(new URL(audio.src, location.href).pathname));
-          if (index >= 0) {
-            if (lastTrack !== index) { recordTrack(index, "play"); markRediscovery(index); }
-            lastTrack = index;
-          }
-          memory.session.lastActivity = Date.now();
-          applyAtmosphere();
-          save();
-        });
-        audio.addEventListener("timeupdate", () => {
-          if (audio.currentTime - lastTime > 30) {
-            memory.session.minutes += (audio.currentTime - lastTime) / 60;
-            lastTime = audio.currentTime;
-            memory.behavior.quiet = Math.min(1, memory.behavior.quiet + 0.002);
-            memory.session.temperature = Math.max(0, memory.session.temperature - 0.4);
-            evaluate();
-          }
-        });
-        audio.addEventListener("ended", () => {
-          const tracks = catalog() || defaultTracks;
-          const index = tracks.findIndex(t => t.file === audio.src || String(t.file || "").endsWith(new URL(audio.src, location.href).pathname));
-          if (index >= 0) recordTrack(index, "complete");
-          lastTime = 0;
-          save();
-        });
-      }
-
-      // A next click is interpreted as a skip only when a track was active.
-      const next = document.getElementById("playerNext");
-      if (next) next.addEventListener("click", () => {
-        if (lastTrack !== null) recordSkip(lastTrack);
-      });
-
-      // General interaction + idle memory.
-      ["pointerdown", "keydown", "touchstart", "scroll"].forEach(evt => {
-        window.addEventListener(evt, () => touch(0.15), { passive: true });
-      });
-      document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-          log("away");
-          save();
-        } else {
-          memory.discoveries.returnVisit = memory.visits > 1;
-          touch(0.5);
-          evaluate();
-          save();
-        }
-      });
-
-      if (resetBtn) {
-        resetBtn.addEventListener("click", () => {
-          const ok = window.confirm("forget this life and start again?");
-          if (ok) reset("rebirth");
-        });
-      }
-
-      // Session temperature decays during long quiet periods; this is deliberately subtle.
-      setInterval(() => {
-        if (Date.now() - memory.session.lastActivity > 20000) {
-          memory.session.temperature = Math.max(0, memory.session.temperature - 1.5);
-          memory.behavior.quiet = Math.min(1, memory.behavior.quiet + 0.01);
-          memory.discoveries.idle = true;
-          evaluate();
-          applyAtmosphere();
-          save();
-        }
-      }, 20000);
-
-      // Relationship grows slowly rather than being tied to a simple visit counter.
-      setInterval(() => {
-        memory.relationship = Math.min(1, memory.relationship + 0.0015);
-        evaluate();
-        applyAtmosphere();
-        save();
-      }, 60000);
-
-      evaluate();
-      applyAtmosphere();
-      save();
     })();
 
     // konami-lite — a shortened version of the classic code (just the
@@ -2636,6 +3988,351 @@
         }
       });
     })();
+    // ================================================================
+    // post-v3.6 feature pass — selected unfinished roadmap items
+    // ================================================================
+    (function postV36FeaturePass() {
+      const audio = document.getElementById("playerAudio");
+      const fsPlayer = document.getElementById("fullscreenPlayer");
+      const fsArt = document.getElementById("fsArt");
+      const fsLogList = document.getElementById("fsLogList");
+      const fsLogCopy = document.getElementById("fsLogCopy");
+      const eqBg = document.getElementById("eqBg");
+      const signal = document.getElementById("playerSignal");
+      const memoryFlash = document.getElementById("memoryFlash");
+      if (!audio) return;
+
+      const TRACK_META = {
+        "i get high": { hue: 40, cls: "track-high" },
+        "i feel like you're the only one": { hue: 350, cls: "track-only" },
+        "in the sunken place": { hue: 230, cls: "track-sunken" },
+        "zzz...": { hue: 200, cls: "track-zzz" },
+        "the seraphim": { hue: 45, cls: "track-seraphim" },
+        "fake gifted": { hue: 210, cls: "track-fake" },
+        "stankquilizer type beat": { hue: 0, cls: "track-typebeat" },
+        "unimagineable probability": { hue: 270, cls: "track-unimagineable" },
+        "ignantamus": { hue: 10, cls: "track-ignantamus" },
+        "the chops": { hue: 35, cls: "track-chops" },
+        "life of the loop": { hue: 175, cls: "track-life" },
+        "the earth i scar": { hue: 5, cls: "track-earth" },
+      };
+      const RADIO_ALBUMS = new Set(["from now on...", "u with me?", "ultimate lie"]);
+      const originalTitle = document.title;
+      let currentTrack = "";
+      let currentAlbum = "";
+      let liveSignal = 0;
+
+      function getText(el) { return el ? el.textContent.trim() : ""; }
+      function currentInfo() {
+        return {
+          title: getText(document.getElementById("playerTrack")),
+          album: getText(document.getElementById("playerAlbum")),
+        };
+      }
+      function setFavicon(hue) {
+        let link = document.querySelector('link[data-stank-favicon]');
+        if (!link) {
+          link = document.createElement("link");
+          link.rel = "icon";
+          link.dataset.stankFavicon = "1";
+          document.head.appendChild(link);
+        }
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#090909"/><circle cx="16" cy="16" r="9" fill="hsl(${hue},90%,62%)"/></svg>`;
+        link.href = "data:image/svg+xml," + encodeURIComponent(svg);
+      }
+      function clearFavicon() {
+        const link = document.querySelector('link[data-stank-favicon]');
+        if (link) link.remove();
+      }
+      function updateTrackIdentity() {
+        const info = currentInfo();
+        if (!info.title || info.title === "silent until you press unmute" || info.title === "reconnecting...") return;
+        currentTrack = info.title;
+        currentAlbum = info.album;
+        const meta = TRACK_META[currentTrack];
+        if (fsPlayer) {
+          Array.from(fsPlayer.classList).filter(c => c.indexOf("track-") === 0).forEach(c => fsPlayer.classList.remove(c));
+          if (meta) fsPlayer.classList.add(meta.cls);
+        }
+        if (!audio.paused) {
+          document.title = `${currentTrack} · stankquilizer`;
+          if (meta) setFavicon(meta.hue);
+        }
+        updateRadioCardState();
+        updateSignal();
+        updateMediaSession();
+      }
+      function resetIdentity() {
+        document.title = originalTitle;
+        clearFavicon();
+      }
+
+      // Tab title + favicon follow the song while it is actually playing.
+      audio.addEventListener("play", () => { AudioReactive.start(); updateTrackIdentity(); updateMediaSession(); });
+      audio.addEventListener("pause", () => { AudioReactive.stop(); resetIdentity(); updateMediaSession(); });
+      audio.addEventListener("ended", () => { AudioReactive.stop(); resetIdentity(); updateMediaSession(); });
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && !audio.paused) updateTrackIdentity();
+      });
+
+      // The player keeps its track data private inside its IIFE. A tiny observer
+      // lets these optional features react without changing that public surface.
+      const trackEl = document.getElementById("playerTrack");
+      const albumEl = document.getElementById("playerAlbum");
+      if (trackEl || albumEl) {
+        const observer = new MutationObserver(() => updateTrackIdentity());
+        if (trackEl) observer.observe(trackEl, { childList: true, characterData: true, subtree: true });
+        if (albumEl) observer.observe(albumEl, { childList: true, characterData: true, subtree: true });
+      }
+
+      // Real audio data in the hero strip. Before/after playback the existing
+      // ambient CSS animation remains untouched.
+      const eqBars = eqBg ? Array.from(eqBg.children) : [];
+      AudioReactive.onFrame((data) => {
+        if (!eqBars.length || audio.paused) return;
+        const bars = AudioReactive.getSpectrum(data, eqBars.length);
+        for (let i = 0; i < eqBars.length; i++) {
+          const v = Math.max(.04, Math.min(1, Math.pow(bars[i], .68) * 1.55));
+          eqBars[i].style.transform = `scaleY(${v})`;
+        }
+      });
+
+      // Circular spectrum around the fullscreen artwork.
+      let ringCanvas = null;
+      let ringCtx = null;
+      function ensureRing() {
+        if (!fsArt || ringCanvas) return;
+        ringCanvas = document.createElement("canvas");
+        ringCanvas.className = "fs-ring";
+        ringCanvas.width = 320;
+        ringCanvas.height = 320;
+        ringCanvas.setAttribute("aria-hidden", "true");
+        fsArt.appendChild(ringCanvas);
+        ringCtx = ringCanvas.getContext("2d");
+      }
+      ensureRing();
+      AudioReactive.onFrame((data) => {
+        if (!ringCtx || !fsPlayer || !fsPlayer.classList.contains("is-open")) return;
+        const w = ringCanvas.width, h = ringCanvas.height, cx = w / 2, cy = h / 2;
+        ringCtx.clearRect(0, 0, w, h);
+        const bars = AudioReactive.getSpectrum(data, 48);
+        const hue = (TRACK_META[currentTrack]?.hue ?? ((Date.now() / 18) % 360));
+        const baseR = 113;
+        for (let i = 0; i < bars.length; i++) {
+          const a = (i / bars.length) * Math.PI * 2 - Math.PI / 2;
+          const inner = baseR;
+          const outer = baseR + 7 + bars[i] * 32;
+          ringCtx.strokeStyle = `hsla(${hue}, 90%, 66%, ${0.18 + bars[i] * 0.58})`;
+          ringCtx.lineWidth = 1 + bars[i] * 1.6;
+          ringCtx.beginPath();
+          ringCtx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+          ringCtx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
+          ringCtx.stroke();
+        }
+        ringCtx.strokeStyle = `hsla(${hue}, 90%, 66%, .18)`;
+        ringCtx.lineWidth = 1;
+        ringCtx.beginPath(); ringCtx.arc(cx, cy, baseR, 0, Math.PI * 2); ringCtx.stroke();
+      });
+
+      // Media Session: lock-screen / hardware media controls where supported.
+      function updateMediaSession() {
+        if (!("mediaSession" in navigator) || !("MediaMetadata" in window)) return;
+        const info = currentInfo();
+        if (!info.title || info.title === "silent until you press unmute" || info.title === "reconnecting...") return;
+        try {
+          const bg = document.getElementById("playerToggle")?.style.backgroundImage || "";
+          const match = bg.match(/^url\(["']?(.*?)["']?\)$/);
+          const artworkSrc = match ? match[1] : "";
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: info.title,
+            artist: "stankquilizer",
+            album: info.album || "stankquilizer radio",
+            artwork: artworkSrc ? [{ src: artworkSrc, sizes: "256x256", type: "image/jpeg" }] : [],
+          });
+        } catch (e) {}
+      }
+      if ("mediaSession" in navigator) {
+        try { navigator.mediaSession.setActionHandler("play", () => document.getElementById("playerToggle")?.click()); } catch (e) {}
+        try { navigator.mediaSession.setActionHandler("pause", () => document.getElementById("playerToggle")?.click()); } catch (e) {}
+        try { navigator.mediaSession.setActionHandler("nexttrack", () => document.getElementById("playerNext")?.click()); } catch (e) {}
+      }
+
+      // Keyboard shortcuts: desktop-friendly, ignored while typing.
+      document.addEventListener("keydown", (e) => {
+        if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+        const tag = document.activeElement?.tagName;
+        if (["INPUT", "TEXTAREA", "SELECT"].includes(tag) || document.activeElement?.isContentEditable) return;
+        if (e.key === " ") { e.preventDefault(); document.getElementById("playerToggle")?.click(); }
+        else if (e.key.toLowerCase() === "n") { e.preventDefault(); document.getElementById("playerNext")?.click(); }
+        else if (e.key.toLowerCase() === "m") { e.preventDefault(); document.getElementById("playerMute")?.click(); }
+        else if (e.key.toLowerCase() === "f") {
+          const info = document.getElementById("playerInfo");
+          if (info && !fsPlayer?.classList.contains("is-open")) info.click();
+          else document.getElementById("fsClose")?.click();
+        }
+      });
+
+      // Transmission counter + gently wobbling signal percentage.
+      function updateSignal() {
+        const signalEl = document.getElementById("playerSignal");
+        if (!signalEl) return;
+        const meta = currentInfo();
+        const title = meta.title;
+        const idx = Object.keys(TRACK_META).indexOf(title);
+        const transmission = idx >= 0 ? String(idx + 1).padStart(2, "0") : "--";
+        const signalValue = signalEl.querySelector(".signal-value");
+        const transValue = signalEl.querySelector(".transmission-value");
+        if (transValue) transValue.textContent = `transmission ${transmission}/12`;
+        if (signalValue) {
+          if (audio.paused || !AudioReactive.isReady()) signalValue.textContent = "signal --%";
+          else {
+            const wobble = Math.round(58 + liveSignal * 39 + Math.sin(Date.now() / 1200) * 3);
+            signalValue.textContent = `signal ${Math.max(0, Math.min(99, wobble))}%`;
+          }
+        }
+      }
+      AudioReactive.onFrame((data) => {
+        if (!audio.paused) liveSignal += (AudioReactive.getOverallEnergy(data) - liveSignal) * 0.12;
+      });
+      setInterval(() => {
+        if (!audio.paused) updateSignal();
+      }, 900);
+
+      // Album cards 3/4/5 get the requested "4 on the radio" hint. The one
+      // currently represented by the radio also gets a subtle live state.
+      function updateRadioCardState() {
+        document.querySelectorAll(".album:not(.shuffle-album):not(.unreleased-album)").forEach((card) => {
+          const title = card.querySelector("h3")?.textContent.trim();
+          const radio = RADIO_ALBUMS.has(title);
+          card.classList.toggle("is-radio-album", radio);
+          const playing = radio && currentAlbum === title && !audio.paused;
+          card.classList.toggle("is-radio-playing", playing);
+        });
+      }
+      updateRadioCardState();
+
+      // ---------- memory extensions ----------
+      const PLUS_KEY = "stankquilizer_memory_plus";
+      let plus = {};
+      try { plus = JSON.parse(localStorage.getItem(PLUS_KEY) || "{}") || {}; } catch (e) { plus = {}; }
+      const now = new Date();
+      const previousVisitAt = typeof plus.lastVisitAt === "number" ? plus.lastVisitAt : null;
+      const previousHour = previousVisitAt === null ? null : new Date(previousVisitAt).getHours();
+      const sameHour = !(typeof SiteMemory !== "undefined" && SiteMemory.wasReset()) && previousHour !== null && previousHour === now.getHours();
+      const previousVisit = previousVisitAt;
+      plus.lastVisitAt = Date.now();
+      try { localStorage.setItem(PLUS_KEY, JSON.stringify(plus)); } catch (e) {}
+
+      function showMemoryFlash(text, duration = 4200) {
+        if (!memoryFlash || !text) return;
+        memoryFlash.textContent = text;
+        memoryFlash.classList.add("is-visible");
+        clearTimeout(memoryFlash._timer);
+        memoryFlash._timer = setTimeout(() => memoryFlash.classList.remove("is-visible"), duration);
+      }
+
+      // "same hour as last time" — once per session, only when the previous
+      // visit really happened in the same local hour.
+      try {
+        if (sameHour && sessionStorage.getItem("stankquilizer_same_hour_shown") !== "1") {
+          sessionStorage.setItem("stankquilizer_same_hour_shown", "1");
+          setTimeout(() => showMemoryFlash(`same hour as last time`, 4600), 1700);
+        }
+      } catch (e) {}
+
+      // Remembered volume. We deliberately keep this separate from the
+      // counters so ?reset clears it only if the visitor explicitly asks for
+      // a complete memory reset.
+      const VOLUME_KEY = "stankquilizer_volume";
+      const savedVolume = (() => { try { const v = parseFloat(localStorage.getItem(VOLUME_KEY)); return isFinite(v) ? Math.max(0, Math.min(1, v)) : null; } catch (e) { return null; } })();
+      if (savedVolume !== null) {
+        audio.volume = savedVolume;
+        const slider = document.getElementById("playerVolume");
+        if (slider) slider.value = String(savedVolume);
+        const mute = document.getElementById("playerMute");
+        if (mute) { mute.classList.toggle("is-muted", savedVolume === 0); mute.setAttribute("aria-pressed", String(savedVolume === 0)); }
+      }
+      audio.addEventListener("volumechange", () => {
+        try { localStorage.setItem(VOLUME_KEY, String(audio.volume)); } catch (e) {}
+      });
+
+      // New releases since the previous visit. Existing cards remain unchanged
+      // until a future release date is newer than that previous session.
+      if (previousVisit) {
+        document.querySelectorAll(".album:not(.shuffle-album):not(.unreleased-album)").forEach((card) => {
+          const dateEl = card.querySelector(".release-date");
+          if (!dateEl) return;
+          const match = dateEl.textContent.match(/released\s+([a-z]{3})\s+(\d{1,2}),\s+(\d{4})/i);
+          if (!match) return;
+          const stamp = Date.parse(`${match[1]} ${match[2]}, ${match[3]} 00:00:00`);
+          if (isFinite(stamp) && stamp > previousVisit) {
+            card.classList.add("is-new-since");
+            if (!card.querySelector(".new-since-note")) {
+              const note = document.createElement("div");
+              note.className = "new-since-note";
+              note.textContent = "new since your last visit";
+              dateEl.insertAdjacentElement("afterend", note);
+            }
+          }
+        });
+      }
+
+      // Copy setlist from the existing fullscreen transmission log.
+      if (fsLogCopy) {
+        fsLogCopy.addEventListener("click", async () => {
+          const lines = fsLogList ? Array.from(fsLogList.querySelectorAll("li")).map((li) => li.textContent.replace(/\s+/g, " ").trim()) : [];
+          const text = lines.length ? `stankquilizer radio — setlist\n${lines.map((x, i) => `${String(i + 1).padStart(2, "0")} ${x}`).join("\n")}` : "stankquilizer radio — setlist\nnothing received yet";
+          try {
+            if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+            else throw new Error("clipboard unavailable");
+            fsLogCopy.textContent = "copied";
+          } catch (e) {
+            const ta = document.createElement("textarea");
+            ta.value = text; ta.style.position = "fixed"; ta.style.left = "-9999px";
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand("copy"); fsLogCopy.textContent = "copied"; } catch (_) { fsLogCopy.textContent = "copy failed"; }
+            ta.remove();
+          }
+          fsLogCopy.classList.add("copied");
+          clearTimeout(fsLogCopy._timer);
+          fsLogCopy._timer = setTimeout(() => { fsLogCopy.textContent = "copy setlist"; fsLogCopy.classList.remove("copied"); }, 1500);
+        });
+      }
+
+      // Milestones: use the existing on-device counters, but only surface the
+      // moment a visitor actually reaches a milestone.
+      let lastMilestoneState = "";
+      function readMemoryCounts() {
+        try {
+          const raw = JSON.parse(localStorage.getItem("stankquilizer_memory") || "{}");
+          return { tracks: Number(raw.tracksHeard) || 0, albums: Array.isArray(raw.albumsVisited) ? raw.albumsVisited.length : 0 };
+        } catch (e) { return { tracks: 0, albums: 0 }; }
+      }
+      function checkMilestones() {
+        const c = readMemoryCounts();
+        const state = `${c.tracks >= 12 ? "12" : ""}|${c.albums >= 5 ? "5" : ""}`;
+        if (state === lastMilestoneState) return;
+        if (lastMilestoneState !== "" && c.tracks >= 12 && !lastMilestoneState.startsWith("12")) showMemoryFlash("all 12 transmissions received", 5000);
+        else if (lastMilestoneState !== "" && c.albums >= 5 && !lastMilestoneState.endsWith("|5")) showMemoryFlash("all 5 releases visited", 5000);
+        lastMilestoneState = state;
+      }
+      checkMilestones();
+      setInterval(checkMilestones, 700);
+
+      // ?reset should also clear the new remembered-volume / same-hour state.
+      if (typeof SiteMemory !== "undefined" && SiteMemory.wasReset()) {
+        try { localStorage.removeItem(VOLUME_KEY); localStorage.removeItem(PLUS_KEY); } catch (e) {}
+        try { sessionStorage.removeItem("stankquilizer_same_hour_shown"); } catch (e) {}
+      }
+
+      // Ensure identity/card state catches transitions after the player has
+      // changed text but before the next animation frame.
+      updateTrackIdentity();
+      updateRadioCardState();
+      updateSignal();
+    })();
+
+
   </script>
 </body>
 </html>
