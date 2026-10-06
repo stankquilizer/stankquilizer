@@ -1,1 +1,11 @@
-
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stankquilizer-observatory",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./public" },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "stankquilizer-observatory",
+    "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+  ]
+}
