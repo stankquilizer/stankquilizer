@@ -2,10 +2,14 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "stankquilizer-observatory",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": "./public" },
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "stankquilizer-observatory",
-    "database_id": "89e93a68-87c5-42fa-b939-4b569136a85b"
+  "assets": {
+    "directory": "./public"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "stankquilizer-observatory",
+      "database_id": "89e93a68-87c5-42fa-b939-4b569136a85b"
+    }
   ]
 }
