@@ -6,6 +6,6 @@
   "d1_databases": [{
     "binding": "DB",
     "database_name": "stankquilizer-observatory",
-    "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    "database_id": "89e93a68-87c5-42fa-b939-4b569136a85b"
   ]
 }
