@@ -135,7 +135,7 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
     return `<div class="card metric"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div><div class="sub">${esc(sub)}</div></div>`;
   }
   function head(title, subtitle) {
-    return `<div class="top"><div><h2>${esc(title)}</h2><p>${esc(subtitle)}</p></div><div class="status">● ingestion nominal</div></div>`;
+    return `<div class="top"><div><h2>${esc(title)}</h2><p>${esc(subtitle)}</p></div><div class="status" id="refreshStatus" aria-live="polite">● auto-refresh every 15s · loading</div></div>`;
   }
   function bars(rows=[]) {
     const counts = new Map((rows || []).map(row=>[Number(row.hour),Number(row.count)||0]));
@@ -324,7 +324,12 @@ mobile navigation is self-contained</pre></div></div></div>`;
 
   async function loadPage(page) {
     $('moreSheet').classList.remove('open');
-    clearTimeout(loadPage.liveTimer);
+    clearTimeout(loadPage.refreshTimer);
+    loadPage.currentPage = page;
+    const requestId = loadPage.requestId = (loadPage.requestId || 0) + 1;
+    const formState = page === 'deploy' ? {
+      build: $('dbuild')?.value || '', ref: $('dref')?.value || '', note: $('dnote')?.value || ''
+    } : null;
     document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
     location.hash = page;
     let html = '';
@@ -352,9 +357,21 @@ mobile navigation is self-contained</pre></div></div></div>`;
       html=deploy(d);
     } else if(page==='privacy') html=privacy();
     else html=system();
+    if (requestId !== loadPage.requestId || loadPage.currentPage !== page) return;
     $('main').innerHTML=html;
+    if (formState) {
+      $('dbuild').value = formState.build;
+      $('dref').value = formState.ref;
+      $('dnote').value = formState.note;
+    }
     wirePage(page);
-    if(page==='live') loadPage.liveTimer=setTimeout(()=>loadPage('live'),15000);
+    const status = $('refreshStatus');
+    if (status) status.textContent = '● auto-refresh every 15s · checked ' + new Date().toLocaleTimeString();
+    if (!['privacy','system'].includes(page)) {
+      loadPage.refreshTimer = setTimeout(() => {
+        if (loadPage.currentPage === page) loadPage(page);
+      }, 15000);
+    }
   }
 
   function wirePage(page) {
@@ -372,6 +389,7 @@ mobile navigation is self-contained</pre></div></div></div>`;
             build:$('dbuild').value,ref:$('dref').value,note:$('dnote').value
           })});
           toast('deployment recorded');
+          $('dbuild').value = $('dref').value = $('dnote').value = '';
           await loadPage('deploy');
         }catch(e){toast('deployment request failed');}
       });
