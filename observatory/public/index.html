@@ -89,9 +89,9 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
 (() => {
   'use strict';
 
-  const NAV = ['overview','live','sessions','memory','player','radio','projects','journey','features','qa','events','deploy','privacy','system'];
+  const NAV = ['overview','live','sessions','memory','player','radio','projects','rediscovery','journey','features','qa','events','deploy','privacy','system'];
   const TRACKS = [
-    'i get high','i feel like you’re the only one','in the sunken place','zzz',
+    'i get high',"i feel like you're the only one",'in the sunken place','zzz...',
     'the seraphim','fake gifted','stankquilizer type beat','unimagineable probability',
     'ignantamus','the chops','life of the loop','the earth i scar'
   ];
@@ -137,8 +137,10 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
   function head(title, subtitle) {
     return `<div class="top"><div><h2>${esc(title)}</h2><p>${esc(subtitle)}</p></div><div class="status">● ingestion nominal</div></div>`;
   }
-  function bars(seed=1) {
-    return `<div class="bars">${Array.from({length:38},(_,i)=>`<i class="bar" style="height:${18+((i*37+seed*11)%72)}%"></i>`).join('')}</div>`;
+  function bars(rows=[]) {
+    const counts = new Map((rows || []).map(row=>[Number(row.hour),Number(row.count)||0]));
+    const maximum = Math.max(1,...counts.values());
+    return `<div class="bars" role="img" aria-label="Event counts per UTC hour over the last 24 hours">${Array.from({length:24},(_,hour)=>{const count=counts.get(hour)||0;const height=count?Math.max(3,Math.round(count/maximum*100)):2;return `<i class="bar" title="${String(hour).padStart(2,'0')}:00 UTC · ${count} events" style="height:${height}%"></i>`}).join('')}</div>`;
   }
 
   function overview(data) {
@@ -155,7 +157,7 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
         ${metric('auth','ONLINE','server-side')}
       </div>
       <div class="two section">
-        <div><div class="section-title">event transmission</div><div class="card">${bars(2)}</div></div>
+        <div><div class="section-title">event transmission · hourly</div><div class="card">${bars(d.eventsByHour)}</div></div>
         <div><div class="section-title">architecture</div><div class="card"><pre>PUBLIC SITE
 ↓
 ANONYMOUS EVENTS
@@ -168,15 +170,22 @@ OBSERVATORY</pre></div></div>
       </div>`;
   }
 
-  function live() {
-    return head('live transmission','machine-room view of the telemetry pipeline.') +
-      `<div class="grid">${metric('ingestion','ONLINE','worker reachable')}${metric('database','ONLINE','D1 binding')}${metric('auth','ONLINE','cookie auth')}${metric('privacy','BOUNDED','allowlisted data')}</div>
-      <div class="section"><div class="section-title">runtime contract</div><div class="card"><pre>no IP addresses
-no location
-no names
-no raw visitor memory
-random session IDs
-event-level telemetry only</pre></div></div>`;
+  function eventTable(rows, emptyText = 'no events yet') {
+    return `<div class="table-wrap"><table><thead><tr><th>time</th><th>session</th><th>event</th><th>subject</th><th>surface</th></tr></thead><tbody>${
+      (rows || []).length ? rows.map(e=>`<tr><td>${new Date(e.ts).toLocaleString()}</td><td>${esc(e.session_id)}</td><td>${esc(e.type)}</td><td>${esc(e.subject)}</td><td>${esc(e.surface)}</td></tr>`).join('') :
+      `<tr><td colspan="5">${esc(emptyText)}</td></tr>`
+    }</tbody></table></div>`;
+  }
+
+  function live(data) {
+    const rows = data?.events || [];
+    const newest = rows.length ? new Date(rows[0].ts).toLocaleTimeString() : 'no recent events';
+    return head('live transmission','recent events received by the collector and stored in D1.') +
+      `<div class="grid">${metric('events in window',rows.length,'last 60 minutes')}${metric('newest event',newest,'local display time')}${metric('collector',data ? 'CONNECTED' : 'UNAVAILABLE','authenticated query')}${metric('privacy','BOUNDED','allowlisted data')}</div>
+      <div class="section"><div class="section-title">live event stream · refreshes every 15 seconds</div>${eventTable(rows,'no events in the selected window')}</div>
+      <div class="section"><div class="section-title">runtime contract</div><div class="card"><pre>no IP addresses · no location · no names
+no raw visitor memory · random pseudonymous IDs
+only allowlisted events and bounded metadata</pre></div></div>`;
   }
 
   async function sessions() {
@@ -189,58 +198,89 @@ event-level telemetry only</pre></div></div>`;
       }</tbody></table></div>`;
   }
 
-  function memory() {
+  function countType(rows, type) {
+    return Number((rows || []).find(row => row.type === type)?.count || 0);
+  }
+
+  function memory(data) {
+    const counts = data?.counts || [];
+    const rows = data?.recent || [];
     return head('memory laboratory','aggregate behavior memory; raw visitor memory remains local.') +
-      `<div class="grid">${metric('new profiles','—','derived')}${metric('returning','—','derived')}${metric('affinity shifts','—','derived')}${metric('decay events','—','derived')}${metric('rediscoveries','—','derived')}${metric('avoidance changes','—','derived')}${metric('memory ghosts','—','derived')}${metric('relationships','—','derived')}</div>
-      <div class="section"><div class="section-title">privacy boundary</div><div class="card"><pre>OBSERVATORY: aggregate telemetry only
-PUBLIC SITE: visitor-facing memory
-RAW VISITOR MEMORY: never uploaded here</pre></div></div>`;
+      `<div class="grid">${metric('snapshots',countType(counts,'memory_snapshot'),'30 days')}${metric('site-state changes',countType(counts,'site_state'),'30 days')}${metric('affinity shifts',countType(counts,'affinity_change'),'30 days')}${metric('decay events',countType(counts,'decay'),'30 days')}${metric('rediscoveries',countType(counts,'rediscovery'),'30 days')}${metric('avoidance changes',countType(counts,'avoidance_change'),'30 days')}${metric('memory ghosts',countType(counts,'memory_ghost'),'30 days')}${metric('resets / rebirths',countType(counts,'reset_action')+countType(counts,'rebirth'),'30 days')}</div>
+      <div class="section"><div class="section-title">recent memory and journey events</div>${eventTable(rows,'no memory events yet')}</div>
+      <div class="section"><div class="section-title">privacy boundary</div><div class="card"><pre>OBSERVATORY: event counts and bounded state summaries
+PUBLIC SITE: visitor-facing memory profile
+RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
   }
 
-  function player() {
+  function player(data) {
+    const tracks = new Map((data?.tracks || []).map(track => [track.subject, track]));
+    const total = type => Number((data?.totals || []).find(row => row.type === type)?.count || 0);
     return head('player laboratory','track identity and playback telemetry.') +
-      `<div class="grid">${metric('tracks','12','album foundation')}${metric('track starts','—','D1')}${metric('completions','—','D1')}${metric('skips','—','D1')}</div>
+      `<div class="grid">${metric('tracks','12','album foundation')}${metric('track starts',total('track_started'),'D1')}${metric('meaningful plays',total('meaningful_play'),'D1')}${metric('completions',total('track_completed'),'D1')}</div>
       <div class="section"><div class="section-title">track identity</div><div class="table-wrap"><table><thead><tr><th>#</th><th>track</th><th>meaningful</th><th>complete</th><th>skip</th></tr></thead><tbody>${
-        TRACKS.map((t,i)=>`<tr><td>${String(i+1).padStart(2,'0')}</td><td>${esc(t)}</td><td>—</td><td>—</td><td>—</td></tr>`).join('')
+        TRACKS.map((t,i)=>{const r=tracks.get(t)||{};return `<tr><td>${String(i+1).padStart(2,'0')}</td><td>${esc(t)}</td><td>${esc(r.meaningful||0)}</td><td>${esc(r.completions||0)}</td><td>${esc(r.skips||0)}</td></tr>`}).join('')
       }</tbody></table></div></div>`;
   }
 
-  function radio() {
+  function radio(data) {
+    const totals = type => Number((data?.totals || []).find(row => row.type === type)?.count || 0);
+    const starts = totals('track_started');
+    const skips = totals('track_skipped');
+    const skipRate = starts ? Math.round((skips / starts) * 100) + '%' : '0%';
     return head('radio laboratory','adaptive transmission and the 12-track foundation.') +
-      `<div class="grid">${metric('adaptive picks','—','D1')}${metric('skip rate','—','D1')}${metric('no-repeat','—','D1')}${metric('track starts','—','D1')}</div>
-      <div class="section"><div class="section-title">track pressure</div><div class="table-wrap"><table><thead><tr><th>track</th><th>meaningful</th><th>complete</th><th>skip</th><th>affinity</th></tr></thead><tbody>${
-        TRACKS.map((t,i)=>`<tr><td>${String(i+1).padStart(2,'0')} · ${esc(t)}</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`).join('')
+      `<div class="grid">${metric('radio sessions',totals('radio_play'),'D1')}${metric('skip rate',skipRate,'skips / starts')}${metric('meaningful plays',totals('meaningful_play'),'D1')}${metric('track starts',starts,'D1')}</div>
+      <div class="section"><div class="section-title">track pressure</div><div class="table-wrap"><table><thead><tr><th>track</th><th>meaningful</th><th>complete</th><th>skip</th><th>progress events</th></tr></thead><tbody>${
+        TRACKS.map((t,i)=>{const r=(data?.tracks||[]).find(track=>track.subject===t)||{};return `<tr><td>${String(i+1).padStart(2,'0')} · ${esc(t)}</td><td>${esc(r.meaningful||0)}</td><td>${esc(r.completions||0)}</td><td>${esc(r.skips||0)}</td><td>${esc(r.progressEvents||0)} progress events</td></tr>`}).join('')
       }</tbody></table></div></div>`;
   }
 
-  function projects() {
+  function projects(data) {
+    const albums = data?.albums || [];
     return head('projects','album/project-level telemetry surface.') +
-      `<div class="grid">${metric('projects','3','current system')}${metric('album visits','—','D1')}${metric('project affinity','—','derived')}${metric('rediscovery','—','derived')}</div>
-      <div class="section"><div class="section-title">projects</div><div class="card"><pre>stankquilizer
-observatory
-future releases / independent from Untitled</pre></div></div>`;
+      `<div class="grid">${metric('projects',albums.length,'seen releases')}${metric('album visits',albums.reduce((sum,row)=>sum+Number(row.visits||0),0),'D1')}${metric('release clicks',albums.reduce((sum,row)=>sum+Number(row.releases||0),0),'D1')}${metric('tracked releases',albums.filter(row=>Number(row.releases||0)>0).length,'D1')}</div>
+      <div class="section"><div class="section-title">release activity · 30 days</div><div class="table-wrap"><table><thead><tr><th>album / release</th><th>album visits</th><th>release clicks</th></tr></thead><tbody>${
+        albums.length ? albums.map(row=>`<tr><td>${esc(row.subject)}</td><td>${esc(row.visits)}</td><td>${esc(row.releases)}</td></tr>`).join('') : '<tr><td colspan="3">no release activity yet</td></tr>'
+      }</tbody></table></div></div>`;
   }
 
-  function journey() {
+  function journey(data) {
+    const counts = data?.counts || [];
+    const rows = (data?.recent || []).filter(row=>['milestone','unlock','completion','rediscovery','rebirth','reset_action'].includes(row.type));
     return head('journey','relationship progression and discovery ledger.') +
-      `<div class="grid">${metric('relationship age','—','derived')}${metric('journey state','—','derived')}${metric('ledger entries','—','D1')}${metric('unlock state','—','feature system')}</div>
-      <div class="section"><div class="section-title">state model</div><div class="card"><pre>arrival → exploration → familiarity → rediscovery → completion
-res(e)t remains a deliberate rebirth / reset state</pre></div></div>`;
+      `<div class="grid">${metric('milestones',countType(counts,'milestone'),'30 days')}${metric('unlocks',countType(counts,'unlock'),'30 days')}${metric('rediscoveries',countType(counts,'rediscovery'),'30 days')}${metric('completions',countType(counts,'completion'),'30 days')}</div>
+      <div class="section"><div class="section-title">recent journey events</div>${eventTable(rows,'no journey events yet')}</div>`;
   }
 
-  function features() {
+  function rediscoveries(data) {
+    const tracks = data?.tracks || [];
+    const rows = data?.recent || [];
+    return head('rediscovery ledger','tracks encountered again after a long absence; no raw listener profile is exposed.') +
+      `<div class="grid">${metric('rediscovery events',data?.total || 0,`${data?.days || 30} days`)}${metric('tracks rediscovered',tracks.length,'top 100 tracks')}${metric('most returned',tracks[0]?.subject || '—','track')}${metric('days covered',data?.days || 30,'maximum 90')}</div>
+      <div class="section"><div class="section-title">tracks with rediscovery events</div><div class="table-wrap"><table><thead><tr><th>track</th><th>rediscoveries</th><th>most recent</th></tr></thead><tbody>${
+        tracks.length ? tracks.map(row=>`<tr><td>${esc(row.subject)}</td><td>${esc(row.count)}</td><td>${new Date(row.last_seen).toLocaleString()}</td></tr>`).join('') : '<tr><td colspan="3">no rediscoveries yet</td></tr>'
+      }</tbody></table></div></div>
+      <div class="section"><div class="section-title">recent events</div>${eventTable(rows,'no rediscovery events yet')}</div>`;
+  }
+
+  function features(data) {
+    const counts = new Map();
+    for (const row of data?.counts || []) counts.set(row.type,(counts.get(row.type)||0)+(Number(row.count)||0));
     return head('feature matrix','the 21-feature Category 5 system plus the observatory foundation.') +
       `<div class="feature-grid">${
-        FEATURES.map((f,i)=>`<div class="feature"><div class="feature-head"><span class="feature-name">${String(i+1).padStart(2,'0')} · ${esc(f)}</span><span class="count">—</span></div><div class="state">${i===18?'PRESENTATION-ONLY':i===20?'READY':'ACTIVE / INTEGRATION'}</div><div class="trace"><i style="width:${25+(i*13)%70}%"></i></div></div>`).join('')
+        FEATURES.map((f,i)=>{const eventType=['memory_snapshot','site_state','affinity_change','avoidance_change','decay','radio_play','track_started','track_skipped','rediscovery','session_evolution','temperature_change','site_state','site_state','site_state','memory_ghost','milestone','unlock','milestone','memory_corruption','completion','reset_action'][i];const count=counts.get(eventType)||0;const width=Math.min(100,Math.max(4,count?20+Math.log2(count+1)*12:4));return `<div class="feature"><div class="feature-head"><span class="feature-name">${String(i+1).padStart(2,'0')} · ${esc(f)}</span><span class="count">${count}</span></div><div class="state">${esc(eventType)} · 30 days</div><div class="trace"><i style="width:${width}%"></i></div></div>`}).join('')
       }</div>`;
   }
 
-  function qa() {
+  function qa(recent = []) {
     return head('QA laboratory','synthetic records are explicitly marked and do not represent real visitors.') +
       `<div class="card"><div class="controls">${
-        ['login','session','track_started','track_completed','track_skipped','rediscovery','res(e)t'].map(s=>`<button class="btn" data-qa="${esc(s)}">${esc(s)}</button>`).join('')
+        ['session_start','track_started','meaningful_play','track_completed','track_skipped','album_entered','rediscovery','milestone','unlock','completion','soft-reset','full-reset','rebirth'].map(s=>`<button class="btn" data-qa="${esc(s)}">${esc(s)}</button>`).join('')
       }</div></div>
-      <div class="section"><div class="section-title">test contract</div><div class="card"><pre>QA events use a qa-prefixed session ID.
+      <div class="section"><div class="section-title">recent synthetic probes</div><div class="table-wrap"><table><thead><tr><th>time</th><th>scenario</th><th>synthetic</th><th>session</th></tr></thead><tbody>${
+        recent.length ? recent.map(row=>{let meta={};try{meta=JSON.parse(row.meta_json||'{}')}catch(_){}return `<tr><td>${new Date(row.ts).toLocaleString()}</td><td>${esc(row.subject)}</td><td>${meta.synthetic?'yes':'—'}</td><td>${esc(row.session_id)}</td></tr>`}).join('') : '<tr><td colspan="4">no QA probes yet</td></tr>'
+      }</tbody></table></div></div>
+      <div class="section"><div class="section-title">test contract</div><div class="card"><pre>QA probes use isolated random session IDs.
 Synthetic metadata is stored in meta_json.
 No IP, location, names, or raw memory are created.</pre></div></div>`;
   }
@@ -267,7 +307,7 @@ No IP, location, names, or raw memory are created.</pre></div></div>`;
       `<div class="grid">${metric('IP address','NEVER','not collected')}${metric('location','NEVER','not collected')}${metric('names','NEVER','not collected')}${metric('raw memory','NEVER','local only')}${metric('full URL','NEVER','not stored')}${metric('user agent','NEVER','not stored')}${metric('random session ID','YES','relationship only')}${metric('event metadata','BOUNDED','allowlisted')}</div>
       <div class="section"><div class="section-title">server-side fields</div><div class="card"><pre>session id · visitor pseudonym · timestamp · event type
 track / album subject · selected feature metadata · build
-explicit device class · reduced-motion state</pre></div></div>`;
+no raw URLs, device details, or Category 5 profile</pre></div></div>`;
   }
 
   function system() {
@@ -284,21 +324,26 @@ mobile navigation is self-contained</pre></div></div></div>`;
 
   async function loadPage(page) {
     $('moreSheet').classList.remove('open');
+    clearTimeout(loadPage.liveTimer);
     document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
     location.hash = page;
     let html = '';
     if(page==='overview'){
       let d=null; try { d=await api('/overview'); } catch(e) {}
       html=overview(d);
-    } else if(page==='live') html=live();
+    } else if(page==='live') {
+      let d=null; try { d=await api('/live?minutes=60&limit=60'); } catch(e) {}
+      html=live(d);
+    }
     else if(page==='sessions') html=await sessions();
-    else if(page==='memory') html=memory();
-    else if(page==='player') html=player();
-    else if(page==='radio') html=radio();
-    else if(page==='projects') html=projects();
-    else if(page==='journey') html=journey();
-    else if(page==='features') html=features();
-    else if(page==='qa') html=qa();
+    else if(page==='memory') { let d=null; try { d=await api('/memory'); } catch(e) {} html=memory(d); }
+    else if(page==='player') { let d=null; try { d=await api('/radio'); } catch(e) {} html=player(d); }
+    else if(page==='radio') { let d=null; try { d=await api('/radio'); } catch(e) {} html=radio(d); }
+    else if(page==='projects') { let d=null; try { d=await api('/projects'); } catch(e) {} html=projects(d); }
+    else if(page==='rediscovery') { let d=null; try { d=await api('/rediscoveries'); } catch(e) {} html=rediscoveries(d); }
+    else if(page==='journey') { let d=null; try { d=await api('/memory'); } catch(e) {} html=journey(d); }
+    else if(page==='features') { let d=null; try { d=await api('/feature-counts'); } catch(e) {} html=features(d); }
+    else if(page==='qa') { let d=[]; try { d=await api('/qa?limit=50'); } catch(e) {} html=qa(d); }
     else if(page==='events'){
       let d=[]; try { d=await api('/events?limit=100'); } catch(e) {}
       html=events(d);
@@ -309,6 +354,7 @@ mobile navigation is self-contained</pre></div></div></div>`;
     else html=system();
     $('main').innerHTML=html;
     wirePage(page);
+    if(page==='live') loadPage.liveTimer=setTimeout(()=>loadPage('live'),15000);
   }
 
   function wirePage(page) {

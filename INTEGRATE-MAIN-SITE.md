@@ -1,22 +1,22 @@
-# Integrate with the current main site
+# Telemetry on the current public site
 
-Do not replace the current live `index.html` with the reference copy in `public-site-connected/`.
+The root `index.html` already loads the root `telemetry-client.js` after the current player and Category 5 scripts. This bridge is additive: it observes the existing radio, album links, fullscreen controls, theme control, and aggregate memory state without replacing the player or uploading raw visitor memory.
 
-Use the telemetry bridge additively:
+Before deploying, set `window.STANKQUILIZER_TELEMETRY_ENDPOINT` in `index.html` to the deployed collector's exact `/collect` URL. The collector's `TELEMETRY_ALLOWED_ORIGINS` variable must include the public site's exact origin if it differs from the current Workers.dev origin.
 
-1. Copy `public-site-connected/telemetry-client.js` to the current public site's root.
-2. Immediately before `</body>`, add:
+The separate `public-site-connected/` directory is a reference copy for another site build. Do not use it to replace the current root `index.html`.
 
-```html
-<script>
-window.STANKQUILIZER_TELEMETRY_ENDPOINT='https://telemetry.stankquilizer.workers.dev/collect';
-window.STANKQUILIZER_BUILD='current-public-build';
-</script>
-<script src="/telemetry-client.js" defer></script>
+Category 5 integrations may emit any allowlisted event through:
+
+```js
+window.dispatchEvent(new CustomEvent('stankquilizer:telemetry', {
+  detail: {
+    type: 'rediscovery',
+    surface: 'memory',
+    subject: 'track title',
+    meta: { reason: '14-day-return' }
+  }
+}));
 ```
 
-3. Keep all existing v3.7 + Category 5 code untouched.
-4. Keep the existing `audio/` directory untouched.
-5. For deeper Category 5 coverage, emit the optional `stankquilizer:telemetry` CustomEvent from the existing engine.
-
-The observatory is intentionally a separate website/Worker. The public site does not get an admin panel.
+Only allowlisted metadata is stored. Never pass the raw Category 5 profile, a URL, or personal information.

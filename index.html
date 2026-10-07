@@ -4450,6 +4450,7 @@
       const decay = () => {
         const age = Math.max(0, now() - (data.lastSeen || now()));
         const days = age / 86400000;
+        data.lastDecayDays = Math.floor(days);
         if (!days) return;
         const factors = { quick: Math.pow(.5, days / 2), medium: Math.pow(.5, days / 14), slow: Math.pow(.5, days / 60) };
         Object.keys(data.track).forEach(k => {
@@ -4470,7 +4471,16 @@
 
       const ensureTrack = (key, album) => data.track[key] || (data.track[key] = { title:key, album:album||"", plays:0, completes:0, skips:0, repeats:0, listenedMs:0, affinity:.5, avoidance:0, recency:0, familiarity:0, lastPlayed:0 });
       const ensureAlbum = (key) => data.album[key] || (data.album[key] = { visits:0, listenedMs:0, affinity:.5, lastVisited:0 });
-      const mark = (key) => { data.discoveries[key] = true; data.seenEvents[key] = now(); };
+      const emitTelemetry = (type, surface, subject = "", meta = {}) => {
+        window.dispatchEvent(new CustomEvent("stankquilizer:telemetry", { detail: { type, surface, subject, meta } }));
+      };
+      const mark = (key, subject = "") => {
+        data.discoveries[key] = true; data.seenEvents[key] = now();
+        if (key === "rediscovery") emitTelemetry("rediscovery", "memory", subject, { wasRediscovered: true });
+        else if (key === "memory-corruption") emitTelemetry("memory_corruption", "memory", "", { reason: "presentation-only" });
+        else if (key === "late-night") emitTelemetry("late_night", "memory", "", { source: "local-clock" });
+        else if (key === "returning") emitTelemetry("memory_ghost", "memory", "", { reason: "return-after-absence" });
+      };
       const radioTracks = () => Array.isArray(window.__stankquilizerRadioTracks) ? window.__stankquilizerRadioTracks : [];
       const releasedAlbumNames = () => Array.from(document.querySelectorAll(".album:not(.shuffle-album):not(.unreleased-album) h3")).map(el => el.textContent.trim()).filter(Boolean);
       const updateProfile = () => {
@@ -4493,8 +4503,21 @@
         else if (data.sessions >= 3 || data.totalListeningMs >= 300000) data.relationship="familiar";
         else if (data.sessions >= 2) data.relationship="learning";
         else data.relationship="first contact";
+        const stateKey = data.state + ":" + data.relationship;
+        if (data._telemetryStateKey !== stateKey) {
+          data._telemetryStateKey = stateKey;
+          emitTelemetry("site_state", "memory", data.state, { memoryState: data.state, relationship: data.relationship, generation: data.generation });
+        }
       };
-      const milestone = (id, condition) => { if (condition && !data.milestones[id]) { data.milestones[id]=now(); mark(id); return true; } return false; };
+      const milestone = (id, condition) => {
+        if (condition && !data.milestones[id]) {
+          data.milestones[id] = now(); mark(id);
+          emitTelemetry("milestone", "memory", id, { milestone: id, sessionCount: data.sessions });
+          emitTelemetry("unlock", "memory", id, { milestone: id });
+          return true;
+        }
+        return false;
+      };
       const checkMilestones = () => {
         milestone("first-return", data.sessions >= 2);
         milestone("five-visits", data.sessions >= 5);
@@ -4510,7 +4533,10 @@
         milestone("deep-memory", data.sessions >= 7 || data.totalListeningMs >= 1800000);
         const keys = Object.keys(data.milestones).length;
         data.completed = keys >= 8 && !!data.milestones["all-tracks-heard"] && !!data.milestones["all-albums-seen"];
-        if (data.completed && !data.completionAt) data.completionAt=now();
+        if (data.completed && !data.completionAt) {
+          data.completionAt = now();
+          emitTelemetry("completion", "memory", "", { completed: true, generation: data.generation, milestone: "discovery-ledger-complete" });
+        }
       };
       const render = () => {
         updateProfile(); checkMilestones();
@@ -4539,8 +4565,14 @@
           if (a) { a.affinity=clamp(a.affinity+.05); a.lastVisited=now(); }
           mark("track:"+title); if(album) mark("album:"+album);
         }
-        if (event === "skip") { t.skips++; t.avoidance=clamp(t.avoidance+.14); data.skips++; data.temperature=Math.min(100,data.temperature+4); }
-        if (event === "complete") { t.completes++; t.affinity=clamp(t.affinity+.08); mark("complete:"+title); }
+        if (event === "skip") {
+          t.skips++; t.avoidance=clamp(t.avoidance+.14); data.skips++; data.temperature=Math.min(100,data.temperature+4);
+          emitTelemetry("avoidance_change", "memory", title, { reason: "skip", temperatureBucket: Math.round(data.temperature / 10) * 10 });
+        }
+        if (event === "complete") {
+          t.completes++; t.affinity=clamp(t.affinity+.08); mark("complete:"+title);
+          emitTelemetry("affinity_change", "memory", title, { reason: "completion" });
+        }
         save(); render();
       };
 
@@ -4577,15 +4609,32 @@
         // Rediscovery is deliberately rare and based on real elapsed absence.
         const m=data.track[c.title];
         if(m && m.lastPlayed && now()-m.lastPlayed>14*86400000 && !m.rediscovered) {
-          m.rediscovered=true; mark("rediscovery");
+          m.rediscovered=true; mark("rediscovery", c.title);
           document.body.classList.add("c5-memory-ghost"); setTimeout(()=>document.body.classList.remove("c5-memory-ghost"),1900);
         }
       };
       if(trackEl||albumEl) { const mo=new MutationObserver(beginTrack); if(trackEl)mo.observe(trackEl,{childList:true,subtree:true,characterData:true}); if(albumEl)mo.observe(albumEl,{childList:true,subtree:true,characterData:true}); }
+      let lastEvolutionMinute = 0;
+      let lastTemperatureBucket = Math.round(data.temperature / 10) * 10;
       if(audio) {
         audio.addEventListener("play",()=>{ beginTrack(); });
         audio.addEventListener("timeupdate",()=>{
-          const t=audio.currentTime, d=t-lastTime; if(!audio.paused && d>0 && d<2) { lastTime=t; data.totalListeningMs += d*1000; data.sessionListeningMs += d*1000; const m=data.track[lastTitle]; if(m)m.listenedMs += d*1000; data.temperature=Math.max(0,Math.min(100,data.temperature - d*.002)); save(); if(Math.floor(data.totalListeningMs/60000)%5===0) render(); }
+          const t=audio.currentTime, d=t-lastTime; if(!audio.paused && d>0 && d<2) {
+            lastTime=t; data.totalListeningMs += d*1000; data.sessionListeningMs += d*1000;
+            const m=data.track[lastTitle]; if(m)m.listenedMs += d*1000;
+            data.temperature=Math.max(0,Math.min(100,data.temperature - d*.002));
+            const minute = Math.floor(data.sessionListeningMs / 60000);
+            if (minute >= 5 && minute % 5 === 0 && minute !== lastEvolutionMinute) {
+              lastEvolutionMinute = minute;
+              emitTelemetry("session_evolution", "memory", "", { listeningMinutes: minute, temperatureBucket: Math.round(data.temperature / 10) * 10 });
+            }
+            const bucket = Math.round(data.temperature / 10) * 10;
+            if (bucket !== lastTemperatureBucket) {
+              lastTemperatureBucket = bucket;
+              emitTelemetry("temperature_change", "memory", "", { temperatureBucket: bucket });
+            }
+            save(); if(Math.floor(data.totalListeningMs/60000)%5===0) render();
+          }
           else lastTime=t;
         });
         audio.addEventListener("ended",()=>{ if(lastTitle) recordTrack(lastTitle,lastAlbum,"complete"); });
@@ -4675,5 +4724,10 @@
     })();
     </script>
 
+  <script>
+    window.STANKQUILIZER_TELEMETRY_ENDPOINT = "https://telemetry.stankquilizer.workers.dev/collect";
+    window.STANKQUILIZER_BUILD = "observatory-telemetry-v1";
+  </script>
+  <script src="/telemetry-client.js" defer></script>
 </body>
 </html>
