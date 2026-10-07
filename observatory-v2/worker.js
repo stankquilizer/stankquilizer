@@ -1,4 +1,4 @@
-const COOKIE = "sq_obs";
+onst COOKIE = "sq_obs";
 const encoder = new TextEncoder();
 
 function json(data, status = 200, extra = {}) {
