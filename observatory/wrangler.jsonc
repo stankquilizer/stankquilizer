@@ -1,11 +1,11 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "stankquilizer-observatory",
   "main": "worker.js",
   "compatibility_date": "2026-10-07",
   "workers_dev": true,
   "assets": {
-    "directory": "./public"
+    "directory": "public"
   },
   "d1_databases": [
     {
