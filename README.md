@@ -24,7 +24,7 @@ Private owner control room for stankquilizer — music.
 
 Do NOT replace your current live public `index.html` with `public-site-connected/index.html` unless you have deliberately verified it is the exact public build you want. That file is a reference/integration copy based on the v3.7 foundation.
 
-The root `index.html` keeps the existing v3.7 + Category 5 player and loads the root `telemetry-client.js` additively. The client stores only random visitor/session IDs and a bounded event queue; it never uploads the raw Category 5 memory profile. Set `window.STANKQUILIZER_TELEMETRY_ENDPOINT` in `index.html` to the collector's deployed `/collect` URL before publishing.
+The root `index.html` keeps the existing v3.7 + Category 5 player and loads the root `telemetry-client.js` additively. The client stores only random visitor/session IDs and a bounded event queue; it never uploads the raw Category 5 memory profile. Its endpoint is configured for `https://stankquilizer-telemetry.stankquilizer.workers.dev/collect`.
 
 `public-site-connected/` remains a reference integration copy for a separate public build; do not replace the root site with it.
 
