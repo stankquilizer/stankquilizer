@@ -28,10 +28,8 @@ The root `index.html` keeps the existing v3.7 + Category 5 player and loads the 
 
 `public-site-connected/` remains a reference integration copy for a separate public build; do not replace the root site with it.
 
-## Demo / production password
+## Observatory password
 
-The requested access phrase is `draquilizer`.
-
-It is NOT embedded in the dashboard. Set it as the Cloudflare Worker secret named `OBSERVATORY_PASSWORD`.
+Choose a long, unique password and set it only as the Cloudflare Worker secret named `OBSERVATORY_PASSWORD`. Do not commit or share the password in this repository.
 
 For maximum protection, also put the observatory hostname behind Cloudflare Access.
