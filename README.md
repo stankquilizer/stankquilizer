@@ -8,8 +8,8 @@ Private owner control room for stankquilizer — music.
 - HttpOnly + Secure + SameSite=Strict auth cookie
 - Optional Cloudflare Access perimeter
 - Private D1 event store
-- write-only telemetry collector
-- public-site telemetry bridge
+- validated, idempotent telemetry collector with a durable offline client queue
+- public-site telemetry integrated into the existing root `index.html`
 - overview / live transmission / sessions / memory / player / radio / projects / journeys / features / QA / events / deployment diff / privacy / system
 - all 21 Category 5 v2 features represented in the feature matrix
 - v3.7 foundation diagnostics represented in player/system/feature views
@@ -24,19 +24,12 @@ Private owner control room for stankquilizer — music.
 
 Do NOT replace your current live public `index.html` with `public-site-connected/index.html` unless you have deliberately verified it is the exact public build you want. That file is a reference/integration copy based on the v3.7 foundation.
 
-For your current public site, the safer path is:
+The root `index.html` keeps the existing v3.7 + Category 5 player and loads the root `telemetry-client.js` additively. The client stores only random visitor/session IDs and a bounded event queue; it never uploads the raw Category 5 memory profile. Its endpoint is configured for `https://stankquilizer-telemetry.stankquilizer.workers.dev/collect`.
 
-1. copy `public-site-connected/telemetry-client.js` to the public site's root;
-2. add the two configuration lines + script tag from `public-site-connected/INTEGRATION-SNIPPET.html` immediately before `</body>`;
-3. keep your current v3.7 + Category 5 code unchanged;
-4. optionally emit Category 5-specific events with `window.dispatchEvent(new CustomEvent('stankquilizer:telemetry',{detail:{type:'rediscovery',surface:'memory',subject:'',meta:{...}}}))`.
+`public-site-connected/` remains a reference integration copy for a separate public build; do not replace the root site with it.
 
-The bridge is additive and deliberately does not upload the raw Category 5 memory profile.
+## Observatory password
 
-## Demo / production password
-
-The requested access phrase is `draquilizer`.
-
-It is NOT embedded in the dashboard. Set it as the Cloudflare Worker secret named `OBSERVATORY_PASSWORD`.
+Choose a long, unique password and set it only as the Cloudflare Worker secret named `OBSERVATORY_PASSWORD`. Do not commit or share the password in this repository.
 
 For maximum protection, also put the observatory hostname behind Cloudflare Access.

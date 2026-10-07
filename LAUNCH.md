@@ -20,6 +20,7 @@ Add these folders/files to the repository:
 collector/
   worker.js
   wrangler.jsonc
+telemetry-client.js
 observatory/
   worker.js
   wrangler.jsonc
@@ -68,7 +69,7 @@ cd observatory
 npx wrangler d1 migrations apply stankquilizer-observatory --remote
 ```
 
-Confirm `sessions`, `events`, `deployments`, and `feature_flags` exist.
+Confirm `sessions`, `events`, `deployments`, `feature_flags`, and `telemetry_dedupe` exist. The migration uses `IF NOT EXISTS`, so it can initialize a fresh database or add the deduplication table to the existing Observatory database.
 
 ## 4. Deploy the collector
 
@@ -86,13 +87,13 @@ Deploy command:
 npx wrangler deploy
 ```
 
-The collector expects the public origin:
+The collector allows the existing public origin by default:
 
 ```text
 https://stankquilizer.stankquilizer.workers.dev
 ```
 
-If you later attach a custom domain, update `ORIGIN` in `collector/worker.js` to the exact public origin and redeploy.
+If the public site uses another origin, set the Worker variable `TELEMETRY_ALLOWED_ORIGINS` to the exact comma-separated allowed origins. Redeploy the collector after changing it.
 
 ## 5. Deploy the observatory
 
@@ -113,32 +114,18 @@ npx wrangler deploy
 Then add the Worker secret:
 
 ```text
-OBSERVATORY_PASSWORD = draquilizer
+OBSERVATORY_PASSWORD = choose a long, unique private password
 ```
 
 Do this in Cloudflare Dashboard → Worker → Settings → Variables and Secrets → Add Secret.
 
 The password is never placed in the dashboard HTML.
 
-## 6. Add telemetry to the CURRENT public site
+## 6. Deploy telemetry with the CURRENT public site
 
 Do NOT overwrite your current public `index.html`.
 
-Copy:
-
-```text
-public-site-connected/telemetry-client.js
-```
-
-to the root of the live public site.
-
-Immediately before `</body>`, add the exact contents of:
-
-```text
-public-site-connected/INTEGRATION-SNIPPET.html
-```
-
-This is additive and preserves your current player, Category 5 memory, audio analyser, fullscreen radio, and visual systems.
+The current root `index.html` already loads `/telemetry-client.js` after the existing player and Category 5 scripts. Before publishing, confirm `window.STANKQUILIZER_TELEMETRY_ENDPOINT` in that file points to the deployed collector's `/collect` URL. This keeps the current player, Category 5 memory, audio analyser, fullscreen radio, and visual systems intact.
 
 ## 7. Optional Category 5 event hooks
 
@@ -181,11 +168,7 @@ Open the observatory URL.
 
 Wrong password → must remain locked.
 
-Correct password:
-
-```text
-draquilizer
-```
+Correct password: use the same private value you stored as the Worker secret. Never put it in this repository.
 
 → dashboard opens.
 
@@ -300,8 +283,8 @@ Use the Worker password as the application-level gate and Access as the identity
 [ ] D1 migration applied
 [ ] collector deployed
 [ ] observatory deployed
-[ ] OBSERVATORY_PASSWORD secret = draquilizer
-[ ] telemetry-client.js added to CURRENT public site
+[ ] OBSERVATORY_PASSWORD set to a long, unique private value
+[ ] telemetry-client.js deployed with CURRENT public site
 [ ] public audio/ folder untouched
 [ ] 12 radio tracks still play
 [ ] wrong observatory password rejected
