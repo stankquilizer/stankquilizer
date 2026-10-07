@@ -114,7 +114,7 @@ npx wrangler deploy
 Then add the Worker secret:
 
 ```text
-OBSERVATORY_PASSWORD = draquilizer
+OBSERVATORY_PASSWORD = choose a long, unique private password
 ```
 
 Do this in Cloudflare Dashboard → Worker → Settings → Variables and Secrets → Add Secret.
@@ -168,11 +168,7 @@ Open the observatory URL.
 
 Wrong password → must remain locked.
 
-Correct password:
-
-```text
-draquilizer
-```
+Correct password: use the same private value you stored as the Worker secret. Never put it in this repository.
 
 → dashboard opens.
 
@@ -287,7 +283,7 @@ Use the Worker password as the application-level gate and Access as the identity
 [ ] D1 migration applied
 [ ] collector deployed
 [ ] observatory deployed
-[ ] OBSERVATORY_PASSWORD secret = draquilizer
+[ ] OBSERVATORY_PASSWORD set to a long, unique private value
 [ ] telemetry-client.js deployed with CURRENT public site
 [ ] public audio/ folder untouched
 [ ] 12 radio tracks still play
