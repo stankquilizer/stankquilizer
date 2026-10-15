@@ -29,7 +29,7 @@ function mockD1() {
       }
       const results = [];
       for (let index = 0; index < statements.length; index += 3) {
-        const [dedupe, event, session] = statements.slice(index, index + 3);
+        const [dedupe, session, event] = statements.slice(index, index + 3);
         const [eventId, sessionId, acceptedAt] = dedupe.values;
         const fresh = !state.dedupe.has(eventId);
         if (fresh) {
@@ -87,6 +87,21 @@ test('migration schema and collector SQL deduplicate against SQLite', async () =
   const worker = (await importWorker('collector/worker.js')).default;
   const database = new DatabaseSync(':memory:');
   database.exec(await read('observatory/migrations/0001_initial.sql'));
+  database.exec(`
+    DROP TABLE events;
+    CREATE TABLE events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL,
+      ts INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      surface TEXT NOT NULL,
+      subject TEXT,
+      value REAL,
+      meta_json TEXT,
+      FOREIGN KEY(session_id) REFERENCES sessions(id)
+    );
+    PRAGMA foreign_keys=ON;
+  `);
   const db = {
     prepare(sql) {
       let values = [];
@@ -117,6 +132,7 @@ test('migration schema and collector SQL deduplicate against SQLite', async () =
   assert.equal((await (await request()).json()).accepted, 0);
   assert.equal(database.prepare('SELECT COUNT(*) AS n FROM events').get().n, 1);
   assert.equal(database.prepare('SELECT event_count FROM sessions').get().event_count, 1);
+  assert.equal(database.prepare('PRAGMA foreign_key_check').all().length, 0);
   database.close();
 });
 
