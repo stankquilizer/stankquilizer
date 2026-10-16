@@ -1817,7 +1817,7 @@
       <svg class="icon-pause" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
     </button>
 
-    <div class="player-info" id="playerInfo">
+    <div class="player-info" id="playerInfo" role="button" tabindex="0" aria-label="open fullscreen player">
       <div class="player-label" id="playerLabel">now playing <span class="player-signal" id="playerSignal" aria-hidden="true"><span class="transmission-value">transmission --/12</span><span class="signal-value">signal --%</span></span></div>
       <div class="player-track" id="playerTrack">silent until you press unmute</div>
       <div class="player-album" id="playerAlbum">stankquilizer radio</div>
@@ -1847,7 +1847,7 @@
   <div class="evo-whisper" id="evoWhisper" aria-hidden="true">you've been here a while</div>
   <div class="memory-flash" id="memoryFlash" aria-live="polite"></div>
 
-  <div class="fullscreen-player" id="fullscreenPlayer" aria-hidden="true">
+  <div class="fullscreen-player" id="fullscreenPlayer" role="dialog" aria-modal="true" aria-label="fullscreen music player" aria-hidden="true">
     <div class="fs-backdrop" id="fsBackdrop" aria-hidden="true"></div>
 
     <button type="button" class="fs-close" id="fsClose" aria-label="close fullscreen player">
@@ -2226,7 +2226,53 @@
       });
     }
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let prefersReducedMotion = reducedMotionQuery.matches;
+    reducedMotionQuery.addEventListener?.("change", (event) => { prefersReducedMotion = event.matches; });
+
+    // Decorative frame work pauses while the tab is in the background and
+    // resumes once when it becomes visible again.
+    function runVisibleAnimation(step) {
+      let active = true;
+      let frame = 0;
+      function schedule() {
+        if (!active || document.hidden || prefersReducedMotion || frame) return;
+        frame = requestAnimationFrame(tick);
+      }
+      function tick() {
+        frame = 0;
+        if (!active || document.hidden) return;
+        step();
+        schedule();
+      }
+      const onVisibility = () => {
+        if (document.hidden) {
+          if (frame) cancelAnimationFrame(frame);
+          frame = 0;
+        } else {
+          schedule();
+        }
+      };
+      const onMotionPreference = (event) => {
+        prefersReducedMotion = event.matches;
+        if (prefersReducedMotion) {
+          if (frame) cancelAnimationFrame(frame);
+          frame = 0;
+        } else {
+          schedule();
+        }
+      };
+      document.addEventListener("visibilitychange", onVisibility);
+      reducedMotionQuery.addEventListener?.("change", onMotionPreference);
+      schedule();
+      return () => {
+        active = false;
+        if (frame) cancelAnimationFrame(frame);
+        frame = 0;
+        document.removeEventListener("visibilitychange", onVisibility);
+        reducedMotionQuery.removeEventListener?.("change", onMotionPreference);
+      };
+    }
 
     // shared audio-analysis plumbing — built once, feeds the real equalizer,
     // the reactive background, the title's bass pulse, and the cursor ghost.
@@ -2337,8 +2383,9 @@
 
       function loop() {
         if (!running) return;
+        if (document.hidden) { running = false; return; }
         requestAnimationFrame(loop);
-        if (!ready || !analyser || !dataArray || document.hidden) return;
+        if (!ready || !analyser || !dataArray) return;
         analyser.getByteFrequencyData(dataArray);
         calibrate(dataArray);
         for (let i = 0; i < listeners.length; i++) {
@@ -2346,6 +2393,7 @@
         }
       }
       function start() {
+        if (prefersReducedMotion) return;
         if (running) return;
         running = true;
         if (!loopStarted) loopStarted = true;
@@ -2383,6 +2431,15 @@
       };
     })();
 
+    reducedMotionQuery.addEventListener?.("change", (event) => {
+      const audioEl = document.getElementById("playerAudio");
+      if (event.matches) AudioReactive.stop();
+      else if (audioEl && !audioEl.paused) {
+        AudioReactive.start();
+        AudioReactive.resume();
+      }
+    });
+
     // shared mood control — the time-of-day tint from before still runs by
     // default; a track can temporarily override it while it's playing, and
     // it reverts the moment playback pauses or stops
@@ -2390,6 +2447,7 @@
       const overlay = document.getElementById("moodOverlay");
       let override = null; // { hue, opacity, rgbCycle } or null
       let cycleRunning = false;
+      let stopCycleAnimation = null;
 
       function timeBasedMood() {
         const hour = new Date().getHours();
@@ -2408,18 +2466,17 @@
 
       function stopCycle() {
         cycleRunning = false;
+        if (stopCycleAnimation) stopCycleAnimation();
+        stopCycleAnimation = null;
       }
 
       function startCycle() {
         if (cycleRunning || prefersReducedMotion) return;
         cycleRunning = true;
-        function frame() {
-          if (!cycleRunning) return;
+        stopCycleAnimation = runVisibleAnimation(() => {
           const hue = (Date.now() / 25) % 360;
           paint(hue, override ? override.opacity : 0.05);
-          requestAnimationFrame(frame);
-        }
-        frame();
+        });
       }
 
       function apply() {
@@ -2505,12 +2562,16 @@
       function clean(raw) {
         const base = fresh();
         if (!raw || typeof raw !== "object") return base;
-        const count = (v) => (typeof v === "number" && isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+        const count = (v) => (typeof v === "number" && isFinite(v) && v >= 0 ? Math.min(1000000000, Math.floor(v)) : 0);
+        const albums = Array.isArray(raw.albumsVisited)
+          ? Array.from(new Set(raw.albumsVisited.filter((x) => typeof x === "string" && x.length <= 500))).slice(-50)
+          : [];
         return {
-          firstVisit: typeof raw.firstVisit === "number" && isFinite(raw.firstVisit) ? raw.firstVisit : base.firstVisit,
+          firstVisit: typeof raw.firstVisit === "number" && isFinite(raw.firstVisit) && raw.firstVisit > 0 && raw.firstVisit <= Date.now()
+            ? raw.firstVisit : base.firstVisit,
           visits: count(raw.visits),
           tracksHeard: count(raw.tracksHeard),
-          albumsVisited: Array.isArray(raw.albumsVisited) ? raw.albumsVisited.filter((x) => typeof x === "string") : [],
+          albumsVisited: albums,
           radioSessions: count(raw.radioSessions),
         };
       }
@@ -2777,9 +2838,8 @@
           p.life -= 0.045;
         }
         particles = particles.filter((p) => p.life > 0);
-        requestAnimationFrame(loop);
       }
-      requestAnimationFrame(loop);
+      runVisibleAnimation(loop);
     })();
 
     // VHS-style flicker when a release link is opened
@@ -2837,14 +2897,13 @@
       });
 
       function titleFrame() {
-        requestAnimationFrame(titleFrame);
         clickBump *= 0.88;
         const audioEl = document.getElementById("playerAudio");
         const isPlaying = audioEl && !audioEl.paused;
         const bassScale = isPlaying ? bass * 0.035 : 0;
         h1.style.transform = `scale(${(1 + bassScale + clickBump).toFixed(4)})`;
       }
-      if (!prefersReducedMotion) titleFrame();
+      runVisibleAnimation(titleFrame);
 
       function pulse() {
         clickBump = 0.08;
@@ -3083,7 +3142,6 @@
         });
 
         function ghostLoop() {
-          requestAnimationFrame(ghostLoop);
           const audioEl = document.getElementById("playerAudio");
           const isPlaying = !!(audioEl && !audioEl.paused);
 
@@ -3102,7 +3160,7 @@
           const hue = (Date.now() / 15 + 150) % 360; // offset hue for a chromatic-ghost feel
           ghostEl.style.borderColor = `hsl(${hue}, 90%, 60%)`;
         }
-        ghostLoop();
+        runVisibleAnimation(ghostLoop);
       }
     })();
 
@@ -3238,7 +3296,6 @@
       }
 
       function loop() {
-        requestAnimationFrame(loop);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         beatPulse *= 0.9; // decays fast — each real hit gets a fresh, short kick
@@ -3310,7 +3367,7 @@
           ctx.fill();
         }
       }
-      loop();
+      runVisibleAnimation(loop);
     })();
 
     // light/dark theme toggle
@@ -3600,7 +3657,11 @@
 
       // "signal lost" — a brief on-brand pause between tracks rather than
       // an instant cut; skipped for reduced-motion (no gratuitous delay)
+      let transitionTimer = null;
+      let transitionSequence = 0;
       function withSignalLost(next) {
+        const sequence = ++transitionSequence;
+        clearTimeout(transitionTimer);
         if (prefersReducedMotion) {
           next();
           return;
@@ -3610,7 +3671,9 @@
         if (fsTrack) fsTrack.textContent = "reconnecting...";
         if (fsAlbum) fsAlbum.textContent = "signal lost";
         flashGlitch();
-        setTimeout(next, 420);
+        transitionTimer = setTimeout(() => {
+          if (sequence === transitionSequence) next();
+        }, 420);
       }
 
       // ---- Category 5: the radio's memory and moods ----
@@ -3727,24 +3790,42 @@
         trackCounted = false;
       }
 
+      let playbackSequence = 0;
+      let consecutivePlaybackErrors = 0;
+      let errorAdvanceTimer = null;
+      function requestPlayback() {
+        const sequence = ++playbackSequence;
+        try {
+          const result = audio.play();
+          if (result && typeof result.then === "function") {
+            result.then(() => {
+              if (sequence === playbackSequence && !audio.paused) {
+                consecutivePlaybackErrors = 0;
+                setPlayingState(true);
+              }
+            }).catch(() => {
+              if (sequence === playbackSequence) setPlayingState(false);
+            });
+          } else {
+            setPlayingState(!audio.paused);
+          }
+        } catch (e) {
+          if (sequence === playbackSequence) setPlayingState(false);
+        }
+      }
+
       function loadAndPlay(trackIndex) {
         const track = TRACKS[trackIndex];
+        if (!track) return;
         resetTrackTracking();
         AudioReactive.resetCalibration(track.visualGain);
         audio.src = track.file;
         updateNowPlaying(track);
-        const playPromise = audio.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-          playPromise.catch(() => {
-            // autoplay/decoding hiccup — UI still reflects intended state,
-            // browser will surface it via the audio element itself
-          });
-        }
+        requestPlayback();
       }
 
       function playCurrent() {
         loadAndPlay(queue[queueIndex]);
-        setPlayingState(true);
       }
 
       function advance() {
@@ -3758,6 +3839,8 @@
       }
 
       function startFresh() {
+        consecutivePlaybackErrors = 0;
+        clearTimeout(errorAdvanceTimer);
         queue = shuffledIndices();
         queueIndex = 0;
         hasStarted = true;
@@ -3775,11 +3858,7 @@
         }
         if (audio.paused) {
           AudioReactive.resume();
-          const playPromise = audio.play();
-          if (playPromise && typeof playPromise.catch === "function") {
-            playPromise.catch(() => {});
-          }
-          setPlayingState(true);
+          requestPlayback();
         } else {
           audio.pause();
           setPlayingState(false);
@@ -3807,6 +3886,7 @@
           fsPlayer.classList.add("is-open");
           fsPlayer.setAttribute("aria-hidden", "false");
           document.body.style.overflow = "hidden";
+          fsClose?.focus();
         }
 
         function closeFullscreen() {
@@ -3818,11 +3898,18 @@
             fsLog.setAttribute("aria-hidden", "true");
           }
           if (fsLogToggle) fsLogToggle.setAttribute("aria-expanded", "false");
+          playerInfo?.focus();
         }
 
         if (playerInfo) {
           playerInfo.style.cursor = "pointer";
           playerInfo.addEventListener("click", openFullscreen);
+          playerInfo.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openFullscreen();
+            }
+          });
         }
         if (fsClose) fsClose.addEventListener("click", closeFullscreen);
 
@@ -3831,8 +3918,30 @@
         });
 
         document.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && fsPlayer.classList.contains("is-open")) {
+          if (!fsPlayer.classList.contains("is-open")) return;
+          if (e.key === "Escape") {
             closeFullscreen();
+            return;
+          }
+          if (e.key === "Tab") {
+            const focusable = Array.from(fsPlayer.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+              .filter((element) => element.getClientRects().length > 0
+                && getComputedStyle(element).visibility !== "hidden"
+                && !element.closest('[aria-hidden="true"]'));
+            if (!focusable.length) {
+              e.preventDefault();
+              fsClose?.focus();
+              return;
+            }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && (document.activeElement === first || !fsPlayer.contains(document.activeElement))) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && (document.activeElement === last || !fsPlayer.contains(document.activeElement))) {
+              e.preventDefault();
+              first.focus();
+            }
           }
         });
       }
@@ -3931,10 +4040,29 @@
         advance();
       });
 
-      audio.addEventListener("pause", () => {
-        if (hasStarted && audio.currentTime > 0 && !audio.ended) {
+      audio.addEventListener("playing", () => {
+        consecutivePlaybackErrors = 0;
+        setPlayingState(true);
+      });
+      audio.addEventListener("pause", () => setPlayingState(false));
+      audio.addEventListener("error", () => {
+        if (!hasStarted || !audio.src) return;
+        setPlayingState(false);
+        clearTimeout(errorAdvanceTimer);
+        consecutivePlaybackErrors += 1;
+        if (consecutivePlaybackErrors >= TRACKS.length) {
+          hasStarted = false;
+          audio.pause();
+          audio.removeAttribute("src");
+          audio.load();
+          trackEl.textContent = "silent until you press unmute";
+          albumEl.textContent = "stankquilizer radio";
+          if (fsTrack) fsTrack.textContent = trackEl.textContent;
+          if (fsAlbum) fsAlbum.textContent = albumEl.textContent;
           setPlayingState(false);
+          return;
         }
+        errorAdvanceTimer = setTimeout(advance, 0);
       });
     })();
 
@@ -4432,12 +4560,63 @@
         if (!raw || typeof raw !== "object") return d;
         Object.assign(d, raw);
         d.version = VERSION;
-        d.track = raw.track && typeof raw.track === "object" ? raw.track : {};
-        d.album = raw.album && typeof raw.album === "object" ? raw.album : {};
-        d.discoveries = raw.discoveries && typeof raw.discoveries === "object" ? raw.discoveries : {};
-        d.milestones = raw.milestones && typeof raw.milestones === "object" ? raw.milestones : {};
-        d.seenEvents = raw.seenEvents && typeof raw.seenEvents === "object" ? raw.seenEvents : {};
-        d.atmosphere = Object.assign(fresh().atmosphere, raw.atmosphere || {});
+        const safeNumber = (value, fallback = 0, max = 1000000000) =>
+          typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(max, value)) : fallback;
+        const trackCatalog = Array.isArray(window.__stankquilizerRadioTracks) ? window.__stankquilizerRadioTracks : [];
+        const knownTracks = new Set(trackCatalog.map(track => track && track.title).filter(Boolean));
+        const sourceTracks = raw.track && typeof raw.track === "object" && !Array.isArray(raw.track) ? raw.track : {};
+        d.track = {};
+        for (const title of knownTracks) {
+          const item = sourceTracks[title];
+          if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+          d.track[title] = {
+            title,
+            album: typeof item.album === "string" ? item.album.slice(0, 100) : "",
+            plays: safeNumber(item.plays), completes: safeNumber(item.completes),
+            skips: safeNumber(item.skips), repeats: safeNumber(item.repeats),
+            listenedMs: safeNumber(item.listenedMs, 0, 315360000000),
+            affinity: clamp(item.affinity ?? 0.5, 0, 1), avoidance: clamp(item.avoidance, 0, 1),
+            recency: clamp(item.recency, 0, 1), familiarity: clamp(item.familiarity, 0, 1),
+            lastPlayed: safeNumber(item.lastPlayed, 0, now()), rediscovered: !!item.rediscovered
+          };
+        }
+        const sourceAlbums = raw.album && typeof raw.album === "object" && !Array.isArray(raw.album) ? raw.album : {};
+        d.album = {};
+        Object.entries(sourceAlbums).slice(0, 20).forEach(([name, item]) => {
+          if (!item || typeof item !== "object" || Array.isArray(item)) return;
+          d.album[String(name).slice(0, 100)] = {
+            affinity: clamp(item.affinity ?? 0.5, 0, 1), visits: safeNumber(item.visits),
+            listenedMs: safeNumber(item.listenedMs, 0, 315360000000),
+            lastVisited: safeNumber(item.lastVisited, 0, now())
+          };
+        });
+        const safeRecord = (value, limit) => {
+          if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+          return Object.fromEntries(Object.entries(value).filter(([key, item]) => key.length <= 120
+            && (typeof item === "boolean" || (typeof item === "number" && Number.isFinite(item))
+              || (typeof item === "string" && item.length <= 120))).slice(-limit));
+        };
+        d.discoveries = safeRecord(raw.discoveries, 200);
+        d.milestones = safeRecord(raw.milestones, 200);
+        d.seenEvents = safeRecord(raw.seenEvents, 1000);
+        d.atmosphere = Object.assign(fresh().atmosphere, safeRecord(raw.atmosphere, 8));
+        ["generation", "previousLives", "firstSeen", "lastSeen", "visits", "sessions", "totalListeningMs",
+          "sessionListeningMs", "skips", "repeats", "fullscreen", "titleInteractions", "albumBrowses",
+          "volumeTouches", "radioStarts", "lateNightSessions", "completionAt", "memoryCorruptions", "resetCount",
+          "lastTrackAt", "lastSessionAt", "lastDecayDays"]
+          .forEach(key => {
+            const ceiling = key.endsWith("Ms") ? 315360000000
+              : ["firstSeen", "lastSeen", "completionAt", "lastTrackAt", "lastSessionAt"].includes(key) ? now() : 1000000000;
+            d[key] = safeNumber(raw[key], d[key], ceiling);
+          });
+        d.temperature = safeNumber(raw.temperature, 35, 100);
+        d.completed = !!raw.completed;
+        d.lastTrack = knownTracks.has(raw.lastTrack) ? raw.lastTrack : "";
+        d.lastAlbum = typeof raw.lastAlbum === "string" ? raw.lastAlbum.slice(0, 100) : "";
+        d.state = ["calm", "restless", "chaotic", "dormant", "active"].includes(raw.state) ? raw.state : "calm";
+        d.relationship = ["first contact", "learning", "familiar", "regular", "old listener"].includes(raw.relationship)
+          ? raw.relationship : "first contact";
+        for (const key of Object.keys(d.atmosphere)) d.atmosphere[key] = clamp(d.atmosphere[key], 0, 1);
         return d;
       };
       let data = normalize(safeJSON(get(KEY), null));
@@ -4691,12 +4870,22 @@
 
       // Discovery ledger + completion/rebirth portal.
       const portal=document.createElement("button"); portal.id="c5ResetPortal"; portal.type="button"; portal.textContent="res(e)t transmission"; document.body.appendChild(portal);
-      const panel=document.createElement("div"); panel.id="c5ResetPanel"; panel.innerHTML='<div class="c5-reset-box"><h2>transmission complete.</h2><p>you have shown the site almost everything it can currently learn.<br><br>start again? your current life will be forgotten.</p><button type="button" data-c5-soft>soft reset</button><button type="button" data-c5-full>forget everything</button><button type="button" data-c5-rebirth>begin new life</button><button type="button" data-c5-cancel>cancel</button></div>'; document.body.appendChild(panel);
-      portal.addEventListener("click",()=>panel.classList.add("is-open"));
+      const panel=document.createElement("div"); panel.id="c5ResetPanel"; panel.innerHTML='<div class="c5-reset-box"><h2 id="c5ResetTitle">transmission complete.</h2><p>you have shown the site almost everything it can currently learn.<br><br>start again? your current life will be forgotten.</p><button type="button" data-c5-soft>soft reset</button><button type="button" data-c5-full>forget everything</button><button type="button" data-c5-rebirth>begin new life</button><button type="button" data-c5-cancel>cancel</button></div>'; panel.setAttribute("role","dialog"); panel.setAttribute("aria-modal","true"); panel.setAttribute("aria-labelledby","c5ResetTitle"); panel.setAttribute("aria-hidden","true"); document.body.appendChild(panel);
+      let resetTrigger=null;
+      const closeResetPanel=()=>{panel.classList.remove("is-open");panel.setAttribute("aria-hidden","true");resetTrigger?.focus();};
+      portal.addEventListener("click",()=>{resetTrigger=portal;panel.classList.add("is-open");panel.setAttribute("aria-hidden","false");panel.querySelector("[data-c5-soft]")?.focus();});
+      panel.addEventListener("keydown",e=>{
+        if(e.key==="Escape"){closeResetPanel();return;}
+        if(e.key!=="Tab")return;
+        const items=Array.from(panel.querySelectorAll("button:not([disabled])"));
+        if(!items.length)return;
+        if(e.shiftKey&&document.activeElement===items[0]){e.preventDefault();items[items.length-1].focus();}
+        else if(!e.shiftKey&&document.activeElement===items[items.length-1]){e.preventDefault();items[0].focus();}
+      });
       panel.addEventListener("click",e=>{
         const b=e.target.closest("button"); if(!b)return;
-        if(b.dataset.c5Cancel){panel.classList.remove("is-open");return;}
-        if(b.dataset.c5Soft){data.sessionListeningMs=0;data.temperature=35;session={startedAt:now(),trackStartedAt:0,currentTrack:"",currentAlbum:"",lastTime:0,trackListenedMs:0,fullscreen:false};panel.classList.remove("is-open");render();save();return;}
+        if(b.dataset.c5Cancel){closeResetPanel();return;}
+        if(b.dataset.c5Soft){data.sessionListeningMs=0;data.temperature=35;session={startedAt:now(),trackStartedAt:0,currentTrack:"",currentAlbum:"",lastTime:0,trackListenedMs:0,fullscreen:false};closeResetPanel();render();save();return;}
         if(b.dataset.c5Full || b.dataset.c5Rebirth){
           const rebirth=!!b.dataset.c5Rebirth, lives=data.previousLives+(rebirth?1:0), resets=data.resetCount+1;
           remove(KEY);
@@ -4706,7 +4895,7 @@
           set(KEY,JSON.stringify(data));
           try { localStorage.removeItem("stankquilizer_volume"); localStorage.removeItem("stankquilizer_memory_plus"); } catch (_) {}
           try { sessionStorage.removeItem("stankquilizer_same_hour_shown"); sessionStorage.removeItem("stankquilizer_c5_late_counted"); } catch (_) {}
-          panel.classList.remove("is-open"); portal.classList.remove("is-visible");
+          panel.classList.remove("is-open"); panel.setAttribute("aria-hidden","true"); portal.classList.remove("is-visible");
           document.body.classList.add("c5-memory-ghost");
           setTimeout(()=>location.reload(),900);
         }
