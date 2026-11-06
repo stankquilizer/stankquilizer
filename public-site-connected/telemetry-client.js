@@ -1,7 +1,7 @@
-/* stankquilizer — observatory telemetry bridge (additive; never replaces the public site) */
+/* stankquilizer - observatory telemetry bridge (additive; never replaces the public site) */
 (() => {
   'use strict';
-  const ENDPOINT = window.STANKQUILIZER_TELEMETRY_ENDPOINT || 'https://telemetry.stankquilizer.workers.dev/collect';
+  const ENDPOINT = window.STANKQUILIZER_TELEMETRY_ENDPOINT || 'https://stankquilizer-telemetry.stankquilizer.workers.dev/collect';
   const BUILD = window.STANKQUILIZER_BUILD || 'public-current';
   const SESSION_KEY='stankquilizer_observatory_session', VISITOR_KEY='stankquilizer_observatory_visitor';
   const started=Date.now(), queue=[]; let timer=null, ended=false;

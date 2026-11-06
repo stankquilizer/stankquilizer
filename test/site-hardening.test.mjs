@@ -107,10 +107,26 @@ test('public site hardening remains additive and mobile-safe', async () => {
   assert.match(html, /closeResetPanel=\(\)=>/);
   assert.match(html, /knownTracks = new Set\(trackCatalog\.map/);
   assert.match(html, /function runVisibleAnimation\(step\)/);
+  assert.match(html, /card\.addEventListener\("pointerenter", placeSpotlight\)/);
+  assert.match(html, /card\.addEventListener\("pointermove", placeSpotlight\)/);
+  assert.doesNotMatch(html, /card\.addEventListener\("mouseleave"[^\n]*(?:spotlight|Spotlight)/);
+
+  const messages = [...html.matchAll(/\{ when: "(always|first|returning|late-night|reset)", track: "([^"]+)", album: "([^"]+)" \}/g)];
+  assert.ok(messages.length >= 20, 'radio idle queue has at least twenty contextual messages');
+  assert.ok(messages.every(([, , track, album]) => track === track.toLowerCase() && album === album.toLowerCase()), 'radio messages stay lowercase');
+  for (const context of ['first', 'returning', 'late-night', 'reset']) assert.ok(messages.some(([, when]) => when === context), `${context} messages exist`);
+  assert.match(html, /13000 \+ Math\.random\(\) \* 5000/);
+  assert.match(html, /audio\.addEventListener\("play", \(\) => clearTimeout\(idleMessageTimer\)/);
 
   const audioFiles = await readdir(new URL('../audio/', import.meta.url));
   const referencedFiles = [...html.matchAll(/file:\s*"(audio\/[^\"]+\.mp3)"/g)].map(match => match[1]);
   assert.equal(referencedFiles.length, 12, 'radio keeps all twelve catalog entries');
   assert.equal(new Set(referencedFiles).size, referencedFiles.length, 'radio catalog has no duplicate audio paths');
   for (const file of referencedFiles) assert.ok(audioFiles.includes(file.slice('audio/'.length)), `${file} exists`);
+
+  const dashboard = await read('observatory/public/index.html');
+  const featureIds = [...dashboard.matchAll(/\{id:'([a-z-]+)',name:/g)].map(match => match[1]);
+  assert.equal(featureIds.length, 21, 'Observatory feature matrix lists all Category 5 v2 features');
+  assert.equal(new Set(featureIds).size, 21, 'Category 5 feature IDs are unique');
+  for (const feature of featureIds) assert.ok(html.includes(`emitFeature("${feature}"`), `public memory engine emits ${feature}`);
 });

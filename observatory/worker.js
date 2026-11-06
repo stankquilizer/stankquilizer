@@ -86,13 +86,39 @@ async function memorySummary(db, since) {
   const counts = await rows(db,
     `SELECT type, COUNT(*) AS count FROM events WHERE ts >= ? AND type IN
       ('memory_snapshot','site_state','temperature_change','archetype_change','rediscovery','avoidance_change',
-       'affinity_change','decay','memory_ghost','memory_corruption','milestone','unlock','completion','reset_action','rebirth')
+       'affinity_change','decay','memory_ghost','memory_corruption','milestone','unlock','completion','reset_action','rebirth','feature_use')
      GROUP BY type ORDER BY count DESC`, since);
   const recent = await rows(db,
     `SELECT ts,session_id,type,subject,meta_json FROM events WHERE ts >= ? AND type IN
-      ('site_state','temperature_change','archetype_change','rediscovery','milestone','unlock','completion','reset_action','rebirth')
+      ('site_state','temperature_change','archetype_change','rediscovery','milestone','unlock','completion','reset_action','rebirth','decay','memory_ghost','memory_corruption','feature_use')
      ORDER BY ts DESC LIMIT 100`, since);
-  return { counts, recent };
+  const states = await rows(db,
+    `SELECT subject,COUNT(*) AS count,MAX(ts) AS last_seen FROM events WHERE ts >= ? AND type='site_state'
+     GROUP BY subject ORDER BY count DESC,last_seen DESC`, since);
+  const features = await rows(db,
+    `SELECT subject AS feature,COUNT(*) AS count,MAX(ts) AS last_seen FROM events WHERE ts >= ?
+     AND type='feature_use' AND surface='memory' GROUP BY subject ORDER BY count DESC,last_seen DESC`, since);
+  const snapshotRow = await db.prepare("SELECT ts,meta_json FROM events WHERE type='memory_snapshot' ORDER BY ts DESC LIMIT 1").first();
+  let rawSnapshot = {};
+  try { rawSnapshot = JSON.parse(snapshotRow?.meta_json || '{}'); } catch (_) {}
+  if (!rawSnapshot || typeof rawSnapshot !== 'object' || Array.isArray(rawSnapshot)) rawSnapshot = {};
+  const number = value => Number.isFinite(Number(value)) ? Math.max(0, Math.min(1000000000, Math.round(Number(value)))) : 0;
+  const latestSnapshot = snapshotRow ? {
+    capturedAt: number(snapshotRow.ts),
+    sessionCount: number(rawSnapshot.sessionCount),
+    trackCount: number(rawSnapshot.trackCount),
+    albumCount: number(rawSnapshot.albumCount),
+    listeningMinutes: number(rawSnapshot.listeningMinutes),
+    milestoneCount: number(rawSnapshot.milestoneCount),
+    decayDays: number(rawSnapshot.decayDays),
+    generation: number(rawSnapshot.generation),
+    resetCount: number(rawSnapshot.resetCount),
+    temperatureBucket: Math.min(100, number(rawSnapshot.temperatureBucket)),
+    memoryState: ['calm','active','restless','chaotic','dormant'].includes(rawSnapshot.memoryState) ? rawSnapshot.memoryState : 'unknown',
+    relationship: ['first contact','learning','familiar','regular','old listener'].includes(rawSnapshot.relationship) ? rawSnapshot.relationship : 'unknown',
+    completed: rawSnapshot.completed === true
+  } : null;
+  return { counts, recent, states, features, latestSnapshot };
 }
 
 async function radioSummary(db, since) {
@@ -179,7 +205,13 @@ async function fetchApi(request, env, url) {
   }
   if (path === '/api/feature-counts') {
     const { days, since } = boundedRange(url);
-    return json({ counts: await featureCounts(env.DB, since), days });
+    const [counts, features] = await Promise.all([
+      featureCounts(env.DB, since),
+      rows(env.DB, `SELECT subject AS feature,COUNT(*) AS count,MAX(ts) AS last_seen FROM events
+        WHERE ts >= ? AND type='feature_use' AND surface='memory'
+        GROUP BY subject ORDER BY count DESC,last_seen DESC`, since)
+    ]);
+    return json({ counts, features, days });
   }
   if (path === '/api/deployments' && request.method === 'GET') {
     return json(await rows(env.DB, 'SELECT id,created_at,build,ref,note FROM deployments ORDER BY created_at DESC LIMIT 100'));

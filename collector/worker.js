@@ -25,6 +25,13 @@ const META_FIELDS = new Set([
   'completed', 'visible', 'volumeBucket', 'build'
 ]);
 const META_TEXT_FIELDS = new Set(['reason', 'source', 'memoryState', 'relationship', 'archetype', 'radioMode', 'feature', 'milestone', 'build']);
+const MEMORY_FEATURE_IDS = new Set([
+  'behavioral-memory', 'listener-profile', 'track-album-affinity', 'avoidance-memory', 'memory-decay',
+  'adaptive-radio', 'exploration', 'rediscovery', 'session-archetypes', 'session-temperature',
+  'adaptive-atmosphere', 'memory-driven-ui', 'site-state', 'relationship-age', 'memory-ghosts',
+  'session-milestones', 'progressive-unlocking', 'discovery-ledger', 'memory-corruption',
+  'completion-state', 'reset-rebirth'
+]);
 
 const allowedOrigins = env => new Set(
   String(env.TELEMETRY_ALLOWED_ORIGINS || DEFAULT_PUBLIC_ORIGIN)
@@ -82,6 +89,7 @@ function validateEvent(input, now) {
   const subject = cleanText(input.subject || '', 100);
   const meta = validateMeta(input.meta);
   if (!meta) return null;
+  if (meta.feature && !MEMORY_FEATURE_IDS.has(meta.feature)) return null;
   const metaJson = JSON.stringify(meta);
   if (metaJson.length > 1600) return null;
   const build = cleanText(input.build || 'unknown', 60).replace(/[^a-zA-Z0-9._+-]/g, '').slice(0, 60) || 'unknown';

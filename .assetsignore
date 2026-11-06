@@ -1,0 +1,16 @@
+# keep the root worker's asset bundle limited to the public site
+.git/
+.assetsignore
+.gitignore
+.wrangler/
+.codex-remote-attachments/
+collector/
+observatory/
+public-site-connected/
+test/
+README.md
+LAUNCH.md
+INTEGRATE-MAIN-SITE.md
+FEATURE-MAP.md
+TEST-REPORT.md
+wrangler.jsonc

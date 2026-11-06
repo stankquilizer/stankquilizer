@@ -1,6 +1,6 @@
-# stankquilizer — observatory final build
+# stankquilizer - observatory final build
 
-Private owner control room for stankquilizer — music.
+Private owner control room for stankquilizer - music.
 
 ## Included
 

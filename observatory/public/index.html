@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090909">
-<title>stankquilizer — observatory</title>
+<title>stankquilizer - observatory</title>
 <style>
 :root{color-scheme:dark;--bg:#090909;--panel:#101010;--line:#242424;--muted:#777;--text:#e8e8e8;--soft:#aaa}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px}
@@ -42,8 +42,8 @@ main{padding:28px;max-width:1400px;width:100%}
 table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:10px 11px;border-bottom:1px solid #1d1d1d;text-align:left;font-size:9px;white-space:nowrap}th{color:#666;font-weight:400;text-transform:uppercase;font-size:8px}
 .rows{display:grid}.row{display:grid;grid-template-columns:90px minmax(0,1fr) 90px;gap:10px;padding:11px;border-bottom:1px solid #1c1c1c;font-size:9px}.row:last-child{border-bottom:0}.muted{color:#666}.ok{color:#aaa}
 .bars{height:120px;display:flex;align-items:end;gap:3px}.bar{flex:1;background:#777;min-width:2px;display:block}
-.feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.feature{border:1px solid var(--line);background:var(--panel);padding:12px}.feature-head{display:flex;justify-content:space-between;gap:8px}.feature-name{font-size:9px}.count{color:#666;font-size:8px}.state{font-size:8px;color:#666;margin-top:7px}.trace{height:2px;background:#242424;margin-top:9px}.trace i{display:block;height:100%;background:#777}
+.feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.feature{border:1px solid var(--line);background:var(--panel);padding:12px}.feature-head{display:flex;justify-content:space-between;gap:8px}.feature-name{font-size:9px}.count{color:#aaa;font-size:9px}.state{font-size:8px;color:#666;margin-top:7px;line-height:1.6}.feature-detail{font-size:8px;color:#999;line-height:1.6;margin-top:8px;min-height:26px}.trace{height:2px;background:#242424;margin-top:9px}.trace i{display:block;height:100%;background:#777}
 .controls{display:flex;flex-wrap:wrap;gap:7px}.controls input{flex:1 1 160px}
 pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-size:9px;margin:0}
 .mobilebar{display:none}.more-sheet{display:none}
@@ -56,7 +56,7 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
 <section id="login" class="login">
   <div class="login-box">
     <div class="kicker">private system / access required</div>
-    <h1>stankquilizer — observatory</h1>
+    <h1>stankquilizer - observatory</h1>
     <p>the public site remembers visitors.<br>this place watches the machinery.</p>
     <form id="loginForm" class="field">
       <input id="password" type="password" placeholder="access phrase" autocomplete="current-password">
@@ -96,11 +96,27 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
     'ignantamus','the chops','life of the loop','the earth i scar'
   ];
   const FEATURES = [
-    'Behavioral memory','Listener profile','Track & album affinity','Avoidance memory',
-    'Memory decay','Adaptive radio','Anti-personalization','Rediscovery','Session archetypes',
-    'Session temperature','Adaptive atmosphere','Memory-driven UI','Site state','Relationship age',
-    'Memory ghosts','Session milestones','Progressive unlocking','Discovery ledger',
-    'Memory corruption','Completion state','res(e)t'
+    {id:'behavioral-memory',name:'Behavioral memory',events:['memory_snapshot'],detail:'bounded session, listening, breadth, and milestone totals'},
+    {id:'listener-profile',name:'Listener profile',events:['site_state'],detail:'anonymous state derived from aggregate behavior'},
+    {id:'track-album-affinity',name:'Track & album affinity',events:['affinity_change'],detail:'coarse affinity changes after plays, completions, and release visits'},
+    {id:'avoidance-memory',name:'Avoidance memory',events:['avoidance_change'],detail:'skip response and bounded temperature band'},
+    {id:'memory-decay',name:'Memory decay',events:['decay'],detail:'elapsed days used to soften local preference weights'},
+    {id:'adaptive-radio',name:'Adaptive radio',events:[],detail:'personalized queue ordering was requested'},
+    {id:'exploration',name:'Anti-personalization / exploration',events:[],detail:'an exploration weight interrupted familiar ordering'},
+    {id:'rediscovery',name:'Rediscovery',events:['rediscovery'],detail:'a track returned after at least 14 days away'},
+    {id:'session-archetypes',name:'Session archetypes',events:['archetype_change'],detail:'coarse archetype transition, never a raw profile'},
+    {id:'session-temperature',name:'Session temperature',events:['temperature_change'],detail:'rounded temperature band changed'},
+    {id:'adaptive-atmosphere',name:'Adaptive atmosphere',events:[],detail:'memory state and temperature drive existing atmosphere'},
+    {id:'memory-driven-ui',name:'Memory-driven UI',events:[],detail:'memory state changed an existing interface behavior'},
+    {id:'site-state',name:'Site state',events:['site_state'],detail:'calm, active, restless, chaotic, or dormant transition'},
+    {id:'relationship-age',name:'Relationship age',events:[],detail:'first contact through old listener progression'},
+    {id:'memory-ghosts',name:'Memory ghosts',events:['memory_ghost'],detail:'subtle return or rediscovery echo'},
+    {id:'session-milestones',name:'Session milestones',events:['milestone'],detail:'new listening or discovery milestone'},
+    {id:'progressive-unlocking',name:'Progressive unlocking',events:['unlock'],detail:'a milestone unlocked a later memory state'},
+    {id:'discovery-ledger',name:'Discovery ledger',events:[],detail:'first-time discoveries were recorded locally'},
+    {id:'memory-corruption',name:'Presentation-only memory corruption',events:['memory_corruption'],detail:'brief text distortion; stored memory is unchanged'},
+    {id:'completion-state',name:'Completion state',events:['completion'],detail:'all required memory conditions were reached'},
+    {id:'reset-rebirth',name:'res(e)t / new lives / rebirth',events:['reset_action','rebirth'],detail:'soft reset, full reset, or new life was chosen'}
   ];
 
   const $ = id => document.getElementById(id);
@@ -147,13 +163,13 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
     const d = data || {};
     return head('overview','the whole system, without the mystery layer.') +
       `<div class="grid">
-        ${metric('sessions / 24h',d.sessions ?? '—','D1')}
-        ${metric('meaningful plays',d.meaningfulPlays ?? '—','D1')}
-        ${metric('completions',d.completions ?? '—','D1')}
-        ${metric('skips',d.skips ?? '—','D1')}
-        ${metric('events / 24h',d.events ?? '—','D1')}
-        ${metric('rediscoveries',d.rediscoveries ?? '—','D1')}
-        ${metric('radio sessions',d.radioSessions ?? '—','D1')}
+        ${metric('sessions / 24h',d.sessions ?? '-','D1')}
+        ${metric('meaningful plays',d.meaningfulPlays ?? '-','D1')}
+        ${metric('completions',d.completions ?? '-','D1')}
+        ${metric('skips',d.skips ?? '-','D1')}
+        ${metric('events / 24h',d.events ?? '-','D1')}
+        ${metric('rediscoveries',d.rediscoveries ?? '-','D1')}
+        ${metric('radio sessions',d.radioSessions ?? '-','D1')}
         ${metric('auth','ONLINE','server-side')}
       </div>
       <div class="two section">
@@ -205,9 +221,25 @@ only allowlisted events and bounded metadata</pre></div></div>`;
   function memory(data) {
     const counts = data?.counts || [];
     const rows = data?.recent || [];
+    const snapshot = data?.latestSnapshot || {};
+    const states = data?.states || [];
+    const detail = row => {
+      let meta = {};
+      try { meta = JSON.parse(row.meta_json || '{}'); } catch (_) {}
+      return [meta.feature,meta.reason,meta.memoryState,meta.relationship,meta.archetype,
+        meta.temperatureBucket == null ? '' : 'temperature ' + meta.temperatureBucket,
+        meta.decayDays == null ? '' : 'decay ' + meta.decayDays + 'd',
+        meta.milestone,meta.completed ? 'complete' : ''].filter(Boolean).join(' · ');
+    };
     return head('memory laboratory','aggregate behavior memory; raw visitor memory remains local.') +
-      `<div class="grid">${metric('snapshots',countType(counts,'memory_snapshot'),'30 days')}${metric('site-state changes',countType(counts,'site_state'),'30 days')}${metric('affinity shifts',countType(counts,'affinity_change'),'30 days')}${metric('decay events',countType(counts,'decay'),'30 days')}${metric('rediscoveries',countType(counts,'rediscovery'),'30 days')}${metric('avoidance changes',countType(counts,'avoidance_change'),'30 days')}${metric('memory ghosts',countType(counts,'memory_ghost'),'30 days')}${metric('resets / rebirths',countType(counts,'reset_action')+countType(counts,'rebirth'),'30 days')}</div>
-      <div class="section"><div class="section-title">recent memory and journey events</div>${eventTable(rows,'no memory events yet')}</div>
+      `<div class="grid">${metric('snapshots',countType(counts,'memory_snapshot'),'30 days')}${metric('latest state',snapshot.memoryState || 'not observed',snapshot.relationship || 'relationship unknown')}${metric('temperature',snapshot.temperatureBucket == null ? 'not observed' : snapshot.temperatureBucket,'latest bounded band')}${metric('local breadth',`${snapshot.trackCount || 0} tracks / ${snapshot.albumCount || 0} releases`,'latest snapshot')}${metric('listening time',snapshot.listeningMinutes || 0,'minutes in latest snapshot')}${metric('milestones',snapshot.milestoneCount || 0,'latest snapshot')}${metric('generation / resets',`${snapshot.generation || 1} / ${snapshot.resetCount || 0}`,'latest snapshot')}${metric('completion',snapshot.completed ? 'complete' : 'in progress','latest snapshot')}${metric('site-state changes',countType(counts,'site_state'),'30 days')}${metric('affinity shifts',countType(counts,'affinity_change'),'30 days')}${metric('decay events',countType(counts,'decay'),'30 days')}${metric('rediscoveries',countType(counts,'rediscovery'),'30 days')}${metric('avoidance changes',countType(counts,'avoidance_change'),'30 days')}${metric('memory ghosts',countType(counts,'memory_ghost'),'30 days')}${metric('resets / rebirths',countType(counts,'reset_action')+countType(counts,'rebirth'),'30 days')}</div>
+      <div class="section"><div class="section-title">state transitions · 30 days</div><div class="table-wrap"><table><thead><tr><th>state</th><th>transitions</th><th>last observed</th></tr></thead><tbody>${states.length ? states.map(row=>`<tr><td>${esc(row.subject)}</td><td>${esc(row.count)}</td><td>${new Date(row.last_seen).toLocaleString()}</td></tr>`).join('') : '<tr><td colspan="3">no state transitions yet</td></tr>'}</tbody></table></div></div>
+      <div class="section"><div class="section-title">recent memory and journey events</div><div class="table-wrap"><table><thead><tr><th>time</th><th>session</th><th>event</th><th>subject</th><th>bounded detail</th></tr></thead><tbody>${rows.length ? rows.map(row=>`<tr><td>${new Date(row.ts).toLocaleString()}</td><td>${esc(row.session_id)}</td><td>${esc(row.type)}</td><td>${esc(row.subject)}</td><td>${esc(detail(row)) || 'no additional detail'}</td></tr>`).join('') : '<tr><td colspan="5">no memory events yet</td></tr>'}</tbody></table></div></div>
+      <div class="section"><div class="section-title">latest anonymous snapshot</div><div class="card"><pre>${snapshot.capturedAt ? 'captured ' + esc(new Date(snapshot.capturedAt).toLocaleString()) : 'no snapshot received'}
+profile fields: sessions, tracks heard, releases visited, listening minutes
+state: ${esc(snapshot.memoryState || 'unknown')} · relationship: ${esc(snapshot.relationship || 'unknown')}
+temperature band: ${esc(snapshot.temperatureBucket ?? 'unknown')} · generation: ${esc(snapshot.generation || 1)}
+completion: ${snapshot.completed ? 'yes' : 'no'} · raw track and album history stays local</pre></div></div>
       <div class="section"><div class="section-title">privacy boundary</div><div class="card"><pre>OBSERVATORY: event counts and bounded state summaries
 PUBLIC SITE: visitor-facing memory profile
 RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
@@ -256,7 +288,7 @@ RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
     const tracks = data?.tracks || [];
     const rows = data?.recent || [];
     return head('rediscovery ledger','tracks encountered again after a long absence; no raw listener profile is exposed.') +
-      `<div class="grid">${metric('rediscovery events',data?.total || 0,`${data?.days || 30} days`)}${metric('tracks rediscovered',tracks.length,'top 100 tracks')}${metric('most returned',tracks[0]?.subject || '—','track')}${metric('days covered',data?.days || 30,'maximum 90')}</div>
+      `<div class="grid">${metric('rediscovery events',data?.total || 0,`${data?.days || 30} days`)}${metric('tracks rediscovered',tracks.length,'top 100 tracks')}${metric('most returned',tracks[0]?.subject || '-','track')}${metric('days covered',data?.days || 30,'maximum 90')}</div>
       <div class="section"><div class="section-title">tracks with rediscovery events</div><div class="table-wrap"><table><thead><tr><th>track</th><th>rediscoveries</th><th>most recent</th></tr></thead><tbody>${
         tracks.length ? tracks.map(row=>`<tr><td>${esc(row.subject)}</td><td>${esc(row.count)}</td><td>${new Date(row.last_seen).toLocaleString()}</td></tr>`).join('') : '<tr><td colspan="3">no rediscoveries yet</td></tr>'
       }</tbody></table></div></div>
@@ -266,9 +298,18 @@ RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
   function features(data) {
     const counts = new Map();
     for (const row of data?.counts || []) counts.set(row.type,(counts.get(row.type)||0)+(Number(row.count)||0));
+    const featureCounts = new Map((data?.features || []).map(row=>[row.feature,row]));
     return head('feature matrix','the 21-feature Category 5 system plus the observatory foundation.') +
       `<div class="feature-grid">${
-        FEATURES.map((f,i)=>{const eventType=['memory_snapshot','site_state','affinity_change','avoidance_change','decay','radio_play','track_started','track_skipped','rediscovery','session_evolution','temperature_change','site_state','site_state','site_state','memory_ghost','milestone','unlock','milestone','memory_corruption','completion','reset_action'][i];const count=counts.get(eventType)||0;const width=Math.min(100,Math.max(4,count?20+Math.log2(count+1)*12:4));return `<div class="feature"><div class="feature-head"><span class="feature-name">${String(i+1).padStart(2,'0')} · ${esc(f)}</span><span class="count">${count}</span></div><div class="state">${esc(eventType)} · 30 days</div><div class="trace"><i style="width:${width}%"></i></div></div>`}).join('')
+        FEATURES.map((feature,i)=>{
+          const explicit = featureCounts.get(feature.id);
+          const legacyCount = feature.events.reduce((sum,type)=>sum+(counts.get(type)||0),0);
+          const count = Number(explicit?.count ?? legacyCount) || 0;
+          const signal = explicit ? 'feature_use' : feature.events.join(' + ') || 'waiting for first observation';
+          const lastSeen = explicit?.last_seen ? 'last ' + new Date(explicit.last_seen).toLocaleString() : count ? 'observed in the selected range' : 'awaiting trigger';
+          const width = Math.min(100,Math.max(4,count?20+Math.log2(count+1)*12:4));
+          return `<div class="feature"><div class="feature-head"><span class="feature-name">${String(i+1).padStart(2,'0')} · ${esc(feature.name)}</span><span class="count">${count}</span></div><div class="state">${esc(signal)} · ${esc(lastSeen)}</div><div class="feature-detail">${esc(feature.detail)}</div><div class="trace"><i style="width:${width}%"></i></div></div>`;
+        }).join('')
       }</div>`;
   }
 
@@ -278,7 +319,7 @@ RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
         ['session_start','track_started','meaningful_play','track_completed','track_skipped','album_entered','rediscovery','milestone','unlock','completion','soft-reset','full-reset','rebirth'].map(s=>`<button class="btn" data-qa="${esc(s)}">${esc(s)}</button>`).join('')
       }</div></div>
       <div class="section"><div class="section-title">recent synthetic probes</div><div class="table-wrap"><table><thead><tr><th>time</th><th>scenario</th><th>synthetic</th><th>session</th></tr></thead><tbody>${
-        recent.length ? recent.map(row=>{let meta={};try{meta=JSON.parse(row.meta_json||'{}')}catch(_){}return `<tr><td>${new Date(row.ts).toLocaleString()}</td><td>${esc(row.subject)}</td><td>${meta.synthetic?'yes':'—'}</td><td>${esc(row.session_id)}</td></tr>`}).join('') : '<tr><td colspan="4">no QA probes yet</td></tr>'
+        recent.length ? recent.map(row=>{let meta={};try{meta=JSON.parse(row.meta_json||'{}')}catch(_){}return `<tr><td>${new Date(row.ts).toLocaleString()}</td><td>${esc(row.subject)}</td><td>${meta.synthetic?'yes':'-'}</td><td>${esc(row.session_id)}</td></tr>`}).join('') : '<tr><td colspan="4">no QA probes yet</td></tr>'
       }</tbody></table></div></div>
       <div class="section"><div class="section-title">test contract</div><div class="card"><pre>QA probes use isolated random session IDs.
 Synthetic metadata is stored in meta_json.
@@ -428,7 +469,7 @@ mobile navigation is self-contained</pre></div></div></div>`;
       installNav();
       await loadPage(location.hash.slice(1) || 'overview');
     } catch(e) {
-      $('loginError').textContent='connection error — try again';
+      $('loginError').textContent='connection error - try again';
     }
   }
 
