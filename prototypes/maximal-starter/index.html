@@ -212,35 +212,49 @@ if(!reduced){const light=document.querySelector('.cursor-light');let ticking=fal
   const selected=messages[Math.floor(Math.random()*messages.length)];
   messageEl.textContent=selected;
   const started=performance.now();
+  const minimumDisplay=5000;
   let complete=0;
-  const totalTasks=Math.max(1,document.images.length+1);
+  const images=Array.from(document.images);
+  const totalTasks=Math.max(1,images.length+1);
   const update=(label)=>{
     complete=Math.min(totalTasks,complete+1);
-    const pct=Math.min(96,8+Math.round((complete/totalTasks)*88));
+    const pct=Math.min(88,8+Math.round((complete/totalTasks)*80));
     progressEl.style.width=pct+'%';
     percentEl.textContent=String(pct).padStart(2,'0')+'%';
     statusEl.textContent=label;
   };
-  const imageTasks=Array.from(document.images).map(img=>{
-    if(img.complete&&img.naturalWidth>0){update('surfaces decoded');return Promise.resolve()}
-    const decode=typeof img.decode==='function'?img.decode().catch(()=>{}):new Promise(resolve=>{
-      img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});
-    });
-    return decode.then(()=>update('surfaces decoded'));
+  // Decode every artwork already in the document; failed assets are recorded as settled
+  // so one unavailable image cannot trap the visitor behind the boot screen.
+  const imageTasks=images.map(img=>{
+    const decode=typeof img.decode==='function'
+      ?img.decode().catch(()=>{})
+      :new Promise(resolve=>{
+        if(img.complete){resolve();return}
+        img.addEventListener('load',resolve,{once:true});
+        img.addEventListener('error',resolve,{once:true});
+      });
+    return decode.then(()=>update('artwork decode complete'));
   });
-  const fontTask=(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(()=>update('type system ready'));
-  const all=Promise.allSettled([...imageTasks,fontTask]);
-  const bounded=Promise.race([all,new Promise(resolve=>setTimeout(resolve,1450))]);
-  bounded.then(()=>{
-    const remaining=Math.max(0,520-(performance.now()-started));
-    setTimeout(()=>{
-      progressEl.style.width='100%';percentEl.textContent='100%';statusEl.textContent='signal acquired';
+  const fontTask=(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve())
+    .catch(()=>{}).then(()=>update('type system ready'));
+  const allPreloads=Promise.allSettled([...imageTasks,fontTask]);
+  const minimumTime=new Promise(resolve=>{
+    setTimeout(resolve,Math.max(0,minimumDisplay-(performance.now()-started)));
+  });
+  // Both gates must clear: five seconds minimum, plus however long real preloading needs.
+  Promise.all([allPreloads,minimumTime]).then(()=>{
+    const finish=()=>{
+      progressEl.style.width='100%';
+      percentEl.textContent='100%';
+      statusEl.textContent='signal acquired';
       setTimeout(()=>{
         screen.classList.add('is-leaving');
         document.documentElement.classList.remove('booting');
         setTimeout(()=>screen.remove(),420);
-      },90);
-    },remaining);
+      },140);
+    };
+    if(statusEl.textContent==='type system ready'||complete===totalTasks)statusEl.textContent='stabilizing signal';
+    requestAnimationFrame(()=>requestAnimationFrame(finish));
   });
 })();
 
