@@ -3,17 +3,17 @@
   const STORAGE_KEY = 'stankquilizer_category6_archive_v1';
   const CRT_KEY = 'stankquilizer_category7_crt';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const specimens = [
-    ['carrier-01','carrier tone','a narrow tone persists after the receiver is disconnected.'],
-    ['room-02','room without walls','the room tone changes when no room is present.'],
-    ['index-03','misfiled silence','a silent interval is listed as a complete recording.'],
-    ['witness-04','second witness','two copies agree on the sound and disagree on its length.'],
-    ['loop-05','unclosed loop','the ending arrives before the last note is played.'],
-    ['weather-06','indoor weather','a faint hiss behaves like distant rain. no forecast was recorded.'],
-    ['door-07','door number zero','the archive lists a door that opens into its own label.'],
-    ['voice-08','unassigned voice','a voice is listed in the inventory. the track contains no voice.'],
-    ['dust-09','magnetic dust','the oldest file is marked recently handled.']
-  ];
+  const specimenSubjects = ['carrier tone','room without walls','misfiled silence','second witness','unclosed loop','indoor weather','door number zero','unassigned voice','magnetic dust','sleeping receiver','borrowed frequency','empty index'];
+  const specimenFindings = ['persists after the receiver is disconnected','changes when no room is present','is listed as a complete recording','agrees on the sound but disagrees on its length','arrives before the last note is played','behaves like distant rain with no forecast','opens into its own label','appears in a track with no voice','is marked recently handled','has no source in the archive','returns with a different timestamp','was recorded between two silences'];
+  const generated = new Set();
+  const pick = list => list[Math.floor(Math.random() * list.length)];
+  function generateSpecimen() {
+    let title, note;
+    do { title = pick(specimenSubjects); note = 'the record ' + pick(specimenFindings) + '.'; }
+    while (generated.has(title + '|' + note));
+    generated.add(title + '|' + note);
+    return { id: 'specimen-' + Math.random().toString(36).slice(2, 10), title, note };
+  }
   const mutations = [
     'the index moved while you were reading it',
     'one quiet interval has been filed under weather',
@@ -30,7 +30,7 @@
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { found: [], knocks: 0, doNotClick: 0, archiveOpen: false };
       return {
-        found: Array.isArray(raw.found) ? raw.found.filter(id => specimens.some(item => item[0] === id)).slice(0, specimens.length) : [],
+        found: Array.isArray(raw.found) ? raw.found.filter(id => typeof id === 'string').slice(-100) : [],
         knocks: Math.min(3, Math.max(0, Number(raw.knocks) || 0)),
         doNotClick: Math.min(1000, Math.max(0, Number(raw.doNotClick) || 0)),
         archiveOpen: raw.archiveOpen === true
@@ -148,8 +148,8 @@
     if (command === 'help') return [
       'help        list commands',
       'stats       read this device’s local site memory',
-      'scan        inspect the authored specimen index',
-      'specimen    recover one fixed archive specimen',
+      'scan        inspect the random specimen index',
+      'specimen    generate a new random specimen',
       'knock       try the sealed archive door',
       'archive     read the hidden layer after three specimens',
       'crt on/off  toggle optional VHS / CRT mode',
@@ -164,22 +164,21 @@
       const albums = Array.isArray(memory.albumsVisited) ? memory.albumsVisited.length : 0;
       const sessions = Math.max(0, Number(memory.radioSessions) || 0);
       const visits = Math.max(0, Number(memory.visits) || 0);
-      return ['local site record', 'visits: ' + visits, 'tracks heard: ' + tracks, 'releases visited: ' + albums, 'radio sessions: ' + sessions, 'specimens indexed: ' + ledger.found.length + ' / ' + specimens.length];
+      return ['local site record', 'visits: ' + visits, 'tracks heard: ' + tracks, 'releases visited: ' + albums, 'radio sessions: ' + sessions, 'specimens generated: ' + ledger.found.length];
     }
     if (command === 'scan') {
       if (ledger.found.length >= 3) ledger.archiveOpen = true;
       saveLedger();
-      return ['scan complete', 'authored records indexed: ' + specimens.length, 'recovered on this device: ' + ledger.found.length, ledger.archiveOpen ? 'sealed channel: open' : 'sealed channel: ' + Math.max(0, 3 - ledger.found.length) + ' more specimen(s) required'];
+      return ['scan complete', 'random combinations available: 144', 'generated on this device: ' + ledger.found.length, ledger.archiveOpen ? 'sealed channel: open' : 'sealed channel: ' + Math.max(0, 3 - ledger.found.length) + ' more specimen(s) required'];
     }
     if (command === 'specimen') {
-      const remaining = specimens.filter(item => !ledger.found.includes(item[0]));
-      if (!remaining.length) return ['the index is empty now.', 'all fixed specimens on this device have been found.'];
-      const item = remaining[Math.floor(Math.random() * remaining.length)];
-      ledger.found.push(item[0]);
+      const item = generateSpecimen();
+      ledger.found.push(item.id);
+      if (ledger.found.length > 100) ledger.found.shift();
       if (ledger.found.length >= 3) ledger.archiveOpen = true;
       saveLedger();
       emitFeature('category-6-specimen');
-      return ['specimen recovered: ' + item[1], item[2], 'index: ' + ledger.found.length + ' / ' + specimens.length, ledger.archiveOpen ? 'a sealed channel has answered.' : 'the archive door needs ' + Math.max(0, 3 - ledger.found.length) + ' more specimen(s).'];
+      return ['specimen generated: ' + item.title, item.note, 'generated: ' + ledger.found.length, ledger.archiveOpen ? 'a sealed channel has answered.' : 'the archive door needs ' + Math.max(0, 3 - ledger.found.length) + ' more specimen(s).'];
     }
     if (command === 'knock') {
       ledger.knocks = Math.min(3, ledger.knocks + 1);

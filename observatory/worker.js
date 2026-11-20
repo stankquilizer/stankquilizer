@@ -13,7 +13,8 @@ const SANDBOX_TRACKS = [
 ];
 const SANDBOX_COMMANDS = new Set([
   'play', 'skip', 'replay', 'haunt', 'glitch', 'heat', 'cooldown',
-  'rediscover', 'milestone', 'complete', 'reset', 'rebirth', 'storm'
+  'rediscover', 'milestone', 'complete', 'reset', 'rebirth', 'storm',
+  'toggle_terminal', 'toggle_do_not_click', 'toggle_specimen', 'toggle_archive', 'toggle_mutation', 'toggle_crt'
 ]);
 const MAX_SANDBOX_SESSIONS = 12;
 const MAX_SANDBOX_EVENTS = 2500;
@@ -86,7 +87,8 @@ function sandboxProfile(value) {
     plays: count('plays'), skips: count('skips'), replays: count('replays'),
     ghosts: count('ghosts'), glitches: count('glitches'), rediscoveries: count('rediscoveries'),
     milestones: count('milestones'), rebirths: count('rebirths'), resets: count('resets'),
-    completed: raw.completed === true
+    completed: raw.completed === true,
+    secrets: Object.fromEntries(['terminal','do_not_click','specimen','archive','mutation','crt'].map(key => [key, !raw.secrets || raw.secrets[key] !== false]))
   };
 }
 
@@ -171,7 +173,12 @@ async function sandboxApi(request, db) {
   }
   const profile = sandboxProfile(row.profile_json);
   let detail = '';
-  if (command === 'play') { profile.plays++; profile.state = 'active'; profile.track = SANDBOX_TRACKS[(SANDBOX_TRACKS.indexOf(profile.track) + 1) % SANDBOX_TRACKS.length]; detail = 'radio advanced to the next synthetic track'; }
+  if (command.startsWith('toggle_')) {
+    const key = command.slice(7);
+    profile.secrets[key] = !profile.secrets[key];
+    detail = `${key} secret ${profile.secrets[key] ? 'enabled' : 'disabled'} in this synthetic session`;
+  }
+  else if (command === 'play') { profile.plays++; profile.state = 'active'; profile.track = SANDBOX_TRACKS[(SANDBOX_TRACKS.indexOf(profile.track) + 1) % SANDBOX_TRACKS.length]; detail = 'radio advanced to the next synthetic track'; }
   else if (command === 'skip') { profile.skips++; profile.track = SANDBOX_TRACKS[(SANDBOX_TRACKS.indexOf(profile.track) + 1) % SANDBOX_TRACKS.length]; detail = 'synthetic listener skipped a track'; }
   else if (command === 'replay') { profile.replays++; profile.plays++; profile.state = 'active'; detail = 'current synthetic track replayed'; }
   else if (command === 'haunt') { profile.ghosts++; profile.state = 'haunted'; detail = 'memory ghost appeared in the simulation'; }
