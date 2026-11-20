@@ -3,16 +3,18 @@
   const STORAGE_KEY = 'stankquilizer_category6_archive_v1';
   const CRT_KEY = 'stankquilizer_category7_crt';
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const specimenSubjects = ['carrier tone','room without walls','misfiled silence','second witness','unclosed loop','indoor weather','door number zero','unassigned voice','magnetic dust','sleeping receiver','borrowed frequency','empty index'];
-  const specimenFindings = ['persists after the receiver is disconnected','changes when no room is present','is listed as a complete recording','agrees on the sound but disagrees on its length','arrives before the last note is played','behaves like distant rain with no forecast','opens into its own label','appears in a track with no voice','is marked recently handled','has no source in the archive','returns with a different timestamp','was recorded between two silences'];
-  const generated = new Set();
+  const specimenSubjects = ['carrier tone','room without walls','misfiled silence','second witness','unclosed loop','indoor weather','door number zero','unassigned voice','magnetic dust','sleeping receiver','borrowed frequency','empty index','distant station','paper moon','quiet engine','glass hallway','orphaned signal','winter antenna','forgotten room','blue hour','false window','last recording','hollow staircase','night operator','closed cinema'];
+  const specimenFindings = ['persists after the receiver is disconnected','changes when no room is present','is listed as a complete recording','agrees on the sound but disagrees on its length','arrives before the last note is played','behaves like distant rain with no forecast','opens into its own label','appears in a track with no voice','is marked recently handled','has no source in the archive','returns with a different timestamp','was recorded between two silences','repeats once after the power is cut','is louder on the blank side of the tape','contains a pause with measurable room tone','ends several seconds before the source recording','appears only in the inventory at night','has a date but no recorded hour','is filed under a station that never existed','leaves a clean gap where its name should be'];
+  const specimenTotal = specimenSubjects.length * specimenFindings.length;
   const pick = list => list[Math.floor(Math.random() * list.length)];
   function generateSpecimen() {
-    let title, note;
-    do { title = pick(specimenSubjects); note = 'the record ' + pick(specimenFindings) + '.'; }
-    while (generated.has(title + '|' + note));
-    generated.add(title + '|' + note);
-    return { id: 'specimen-' + Math.random().toString(36).slice(2, 10), title, note };
+    const used = new Set(ledger.found.map(id => Number(String(id).replace('specimen-', ''))).filter(Number.isInteger));
+    if (used.size >= specimenTotal) return null;
+    let index;
+    do { index = Math.floor(Math.random() * specimenTotal); } while (used.has(index));
+    const subject = specimenSubjects[Math.floor(index / specimenFindings.length)];
+    const finding = specimenFindings[index % specimenFindings.length];
+    return { id: 'specimen-' + index, title: subject, note: 'the record ' + finding + '.' };
   }
   const mutations = [
     'the index moved while you were reading it',
@@ -30,7 +32,7 @@
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { found: [], knocks: 0, doNotClick: 0, archiveOpen: false };
       return {
-        found: Array.isArray(raw.found) ? raw.found.filter(id => typeof id === 'string').slice(-100) : [],
+        found: Array.isArray(raw.found) ? [...new Set(raw.found.filter(id => /^specimen-\d+$/.test(id)))].slice(-500) : [],
         knocks: Math.min(3, Math.max(0, Number(raw.knocks) || 0)),
         doNotClick: Math.min(1000, Math.max(0, Number(raw.doNotClick) || 0)),
         archiveOpen: raw.archiveOpen === true
@@ -155,7 +157,8 @@
       'crt on/off  toggle optional VHS / CRT mode',
       'mutation    test one brief authored signal mutation',
       'clear       clear this terminal output',
-      'close       return to the receiver'
+      'close       return to the receiver',
+      'shift+t     open this terminal on a keyboard'
     ];
     if (command === 'stats') {
       let memory = {};
@@ -169,12 +172,12 @@
     if (command === 'scan') {
       if (ledger.found.length >= 3) ledger.archiveOpen = true;
       saveLedger();
-      return ['scan complete', 'random combinations available: 144', 'generated on this device: ' + ledger.found.length, ledger.archiveOpen ? 'sealed channel: open' : 'sealed channel: ' + Math.max(0, 3 - ledger.found.length) + ' more specimen(s) required'];
+      return ['scan complete', 'curated combinations available: ' + specimenTotal, 'generated on this device: ' + ledger.found.length, ledger.archiveOpen ? 'sealed channel: open' : 'sealed channel: ' + Math.max(0, 3 - ledger.found.length) + ' more specimen(s) required'];
     }
     if (command === 'specimen') {
       const item = generateSpecimen();
+      if (!item) return ['the specimen index is complete.', 'all ' + specimenTotal + ' curated records have been generated on this device.'];
       ledger.found.push(item.id);
-      if (ledger.found.length > 100) ledger.found.shift();
       if (ledger.found.length >= 3) ledger.archiveOpen = true;
       saveLedger();
       emitFeature('category-6-specimen');
@@ -231,6 +234,7 @@
 
   document.addEventListener('keydown',event => {
     if (terminal.classList.contains('is-open')) return;
+    if (event.shiftKey && event.key.toLowerCase() === 't' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) { event.preventDefault(); keyBuffer = ''; openTerminal(); return; }
     if (event.ctrlKey || event.altKey || event.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) return;
     if (event.key.length !== 1 || !/[a-z]/i.test(event.key)) { keyBuffer = ''; return; }
     keyBuffer = (keyBuffer + event.key.toLowerCase()).slice(-8);
