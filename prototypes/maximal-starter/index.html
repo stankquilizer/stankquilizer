@@ -109,8 +109,50 @@ footer{color:var(--muted)}
 @media(prefers-reduced-motion:reduce){.tape-track{animation:none}.release .art,.release .art img,.art-ornament,.art-type{transition:none}}
 
 </style>
+<style id="maximal-boot-styles">
+/* MAXIMAL BOOT SEQUENCE */
+html.booting,html.booting body{overflow:hidden}
+.boot-screen{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;overflow:hidden;background:#07101f;color:#eaf5ff;font-family:var(--mono);isolation:isolate}
+html.booting .boot-screen{display:flex}
+.boot-screen::before,.boot-screen::after{content:"";position:absolute;inset:-30%;pointer-events:none}
+.boot-screen::before{background:radial-gradient(ellipse at 50% 48%,rgba(55,133,255,.24),transparent 38%),radial-gradient(ellipse at 18% 78%,rgba(91,223,255,.13),transparent 34%);animation:boot-aura 7s ease-in-out infinite alternate}
+.boot-screen::after{inset:0;opacity:.24;background:linear-gradient(rgba(113,173,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(113,173,255,.09) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(ellipse at center,#000 12%,transparent 78%)}
+.boot-orbit{position:absolute;width:min(76vw,620px);aspect-ratio:1;border:1px solid rgba(137,197,255,.18);border-radius:50%;box-shadow:0 0 90px rgba(52,137,255,.08),inset 0 0 80px rgba(52,137,255,.05);animation:boot-spin 18s linear infinite}
+.boot-orbit::before,.boot-orbit::after{content:"";position:absolute;border:1px solid rgba(151,224,255,.2);border-radius:50%;inset:12%;transform:rotateX(68deg) rotate(24deg)}
+.boot-orbit::after{inset:27%;transform:rotateY(66deg) rotate(-38deg);border-color:rgba(160,177,255,.26)}
+.boot-core{position:absolute;width:9px;height:9px;left:50%;top:50%;border-radius:50%;background:#c5f6ff;box-shadow:0 0 12px #8bdcff,0 0 38px #3988ff;transform:translate(-50%,-50%)}
+.boot-panel{position:relative;z-index:2;width:min(440px,calc(100% - 48px));display:flex;flex-direction:column;align-items:center;text-align:center}
+.boot-mark{font:700 clamp(31px,7vw,49px)/1 var(--display);letter-spacing:-.1em;text-transform:lowercase;color:#f1f8ff;text-shadow:0 0 28px rgba(106,185,255,.3)}
+.boot-mark span{color:#77cfff}
+.boot-overline{margin-top:17px;color:#79bfff;font:9px var(--mono);letter-spacing:.22em;text-transform:uppercase}
+.boot-message{min-height:54px;display:flex;align-items:center;justify-content:center;margin:27px 0 25px;color:#d3e7ff;font:500 clamp(13px,2.8vw,16px)/1.6 var(--display);letter-spacing:-.025em;max-width:390px}
+.boot-progress{width:min(280px,82%);height:2px;background:rgba(152,194,255,.18);overflow:hidden;position:relative}
+.boot-progress span{display:block;width:8%;height:100%;background:linear-gradient(90deg,#3988ff,#8beaff,#b5c6ff);box-shadow:0 0 15px #69c9ff;transition:width .22s ease}
+.boot-meta{width:min(280px,82%);display:flex;justify-content:space-between;margin-top:10px;color:#7894b8;font:8px var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.boot-index{position:absolute;left:22px;top:22px;color:#7894b8;font:8px var(--mono);letter-spacing:.16em}
+.boot-coordinate{position:absolute;right:22px;bottom:22px;color:#7894b8;font:8px var(--mono);letter-spacing:.13em}
+.boot-screen.is-leaving{opacity:0;visibility:hidden;transition:opacity .38s ease,visibility .38s}
+@keyframes boot-spin{to{transform:rotate(360deg)}}@keyframes boot-aura{to{transform:scale(1.12) rotate(8deg);opacity:.7}}
+@media(max-width:600px){.boot-orbit{width:108vw}.boot-index{left:15px;top:16px}.boot-coordinate{right:15px;bottom:16px}.boot-message{margin:24px 0 22px}}
+@media(prefers-reduced-motion:reduce){.boot-orbit,.boot-screen::before{animation:none}.boot-progress span{transition:none}.boot-screen.is-leaving{transition:none}}
+</style>
+<script>document.documentElement.classList.add('booting')</script>
 </head>
 <body>
+
+<div class="boot-screen" id="bootScreen" role="status" aria-live="polite" aria-label="loading stankquilizer">
+  <span class="boot-index">sq / boot sequence 01</span>
+  <div class="boot-orbit" aria-hidden="true"><span class="boot-core"></span></div>
+  <div class="boot-panel">
+    <div class="boot-mark">stankquilizer<span>.</span></div>
+    <div class="boot-overline">establishing visual frequency</div>
+    <p class="boot-message" id="bootMessage"></p>
+    <div class="boot-progress" aria-hidden="true"><span id="bootProgress"></span></div>
+    <div class="boot-meta"><span id="bootStatus">decoding surfaces</span><span id="bootPercent">08%</span></div>
+  </div>
+  <span class="boot-coordinate">light / matter / signal</span>
+</div>
+
 <div class="noise" aria-hidden="true"></div><div class="cursor-light" aria-hidden="true"></div><div class="scroll-thread" aria-hidden="true"></div>
 <div class="wrap">
  <div class="top"><span>independent sound / independent world</span><span>archive fragment no. 002 — five releases</span></div>
@@ -140,5 +182,67 @@ const collage=document.querySelector('.collage');
 if(collage){const layout=1+Math.floor(Math.random()*3);collage.classList.add('layout-'+layout);collage.dataset.arrangement='composition '+String(layout).padStart(2,'0')}
 if(!reduced){const light=document.querySelector('.cursor-light');let ticking=false;const updateAtmosphere=()=>{const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);root.style.setProperty('--scroll',String(Math.min(1,scrollY/max)));ticking=false};addEventListener('scroll',()=>{if(!ticking){requestAnimationFrame(updateAtmosphere);ticking=true}},{passive:true});updateAtmosphere();if(light&&matchMedia('(pointer:fine)').matches){addEventListener('pointermove',e=>{root.style.setProperty('--mx',e.clientX+'px');root.style.setProperty('--my',e.clientY+'px');light.style.opacity='.95'},{passive:true});addEventListener('pointerleave',()=>light.style.opacity='0')}}
 })();
+</script>
+<script>
+
+(()=> {
+  const screen=document.getElementById('bootScreen');
+  if(!screen){document.documentElement.classList.remove('booting');return}
+  const messageEl=document.getElementById('bootMessage');
+  const progressEl=document.getElementById('bootProgress');
+  const percentEl=document.getElementById('bootPercent');
+  const statusEl=document.getElementById('bootStatus');
+  const subjects=[
+    'the blue signal','an unfinished frequency','the afterimage','a quiet machine','the midnight current',
+    'a borrowed orbit','the distant waveform','this electric weather','the soft collision','an unclaimed coordinate',
+    'the sleeping satellite','a fragment of tomorrow','the lucid static','the hidden interval','a room made of light',
+    'the second horizon','the low gravity','an almost familiar voice','the cold spectrum','a pulse beneath the surface',
+    'the last bright error','a parallel silence','the invisible engine','a map with no edges','the signal between stations'
+  ];
+  const predicates=[
+    'is tuning itself to a world that has not arrived','keeps a little light for the unknown','moves where the map stops',
+    'remembers a color no screen can hold','has one more orbit to complete','waits just outside the visible spectrum',
+    'turns distance into something you can hear','leaves the door open for another frequency',
+    'does not need a destination to move','has learned the shape of silence','changes direction when you get close',
+    'glows without asking to be seen','finds a rhythm in the interference','carries a message from the near-future',
+    'keeps drifting after the signal ends','makes room for impossible geometry','was never designed to stay still',
+    'translates the dark into soft voltage','has not decided what it will become','arrives before its own reflection'
+  ];
+  const messages=subjects.flatMap(subject=>predicates.map(predicate=>subject+' '+predicate));
+  const selected=messages[Math.floor(Math.random()*messages.length)];
+  messageEl.textContent=selected;
+  const started=performance.now();
+  let complete=0;
+  const totalTasks=Math.max(1,document.images.length+1);
+  const update=(label)=>{
+    complete=Math.min(totalTasks,complete+1);
+    const pct=Math.min(96,8+Math.round((complete/totalTasks)*88));
+    progressEl.style.width=pct+'%';
+    percentEl.textContent=String(pct).padStart(2,'0')+'%';
+    statusEl.textContent=label;
+  };
+  const imageTasks=Array.from(document.images).map(img=>{
+    if(img.complete&&img.naturalWidth>0){update('surfaces decoded');return Promise.resolve()}
+    const decode=typeof img.decode==='function'?img.decode().catch(()=>{}):new Promise(resolve=>{
+      img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});
+    });
+    return decode.then(()=>update('surfaces decoded'));
+  });
+  const fontTask=(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(()=>update('type system ready'));
+  const all=Promise.allSettled([...imageTasks,fontTask]);
+  const bounded=Promise.race([all,new Promise(resolve=>setTimeout(resolve,1450))]);
+  bounded.then(()=>{
+    const remaining=Math.max(0,520-(performance.now()-started));
+    setTimeout(()=>{
+      progressEl.style.width='100%';percentEl.textContent='100%';statusEl.textContent='signal acquired';
+      setTimeout(()=>{
+        screen.classList.add('is-leaving');
+        document.documentElement.classList.remove('booting');
+        setTimeout(()=>screen.remove(),420);
+      },90);
+    },remaining);
+  });
+})();
+
 </script>
 </body></html>
