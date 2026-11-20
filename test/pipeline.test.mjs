@@ -231,13 +231,17 @@ test('sandbox commands stay in separate tables and clear only synthetic state', 
   assert.equal((await qaRows.json())[0].subject, 'track_started');
   assert.equal(database.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 0);
   assert.equal(database.prepare('SELECT COUNT(*) AS n FROM events').get().n, 0);
-  assert.equal(database.prepare('SELECT COUNT(*) AS n FROM sandbox_events').get().n, 23);
+  assert.equal(database.prepare("SELECT COUNT(*) AS n FROM sandbox_events WHERE command NOT LIKE 'qa:%'").get().n, 22);
+  assert.equal(database.prepare("SELECT COUNT(*) AS n FROM sandbox_events WHERE command LIKE 'qa:%'").get().n, 1);
 
   const cleared = await (await send('POST', { action: 'clear' })).json();
   assert.equal(cleared.clearedSessions, 1);
-  assert.equal(cleared.clearedEvents, 23);
+  assert.equal(cleared.clearedEvents, 22);
   assert.equal((await (await send('GET')).json()).sessions.length, 0);
   assert.equal(database.prepare('SELECT COUNT(*) AS n FROM sandbox_sessions').get().n, 0);
+  assert.equal(database.prepare("SELECT COUNT(*) AS n FROM sandbox_events WHERE command NOT LIKE 'qa:%'").get().n, 0);
+  assert.equal(database.prepare("SELECT COUNT(*) AS n FROM sandbox_events WHERE command LIKE 'qa:%'").get().n, 1,
+    'clearing sandbox simulations preserves the QA probe history');
   database.close();
 });
 

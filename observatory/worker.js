@@ -141,7 +141,7 @@ async function sandboxApi(request, db) {
   if (Object.keys(body).some(key => !expectedKeys.has(key))) return json({ error: 'unknown field' }, 400);
   const now = Date.now();
   if (action === 'clear') {
-    const events = await db.prepare('DELETE FROM sandbox_events').run();
+    const events = await db.prepare("DELETE FROM sandbox_events WHERE command NOT LIKE 'qa:%'").run();
     const sessions = await db.prepare('DELETE FROM sandbox_sessions').run();
     return json({ ok: true, clearedSessions: Number(sessions.meta?.changes) || 0, clearedEvents: Number(events.meta?.changes) || 0 });
   }
