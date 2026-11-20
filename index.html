@@ -971,11 +971,18 @@
       pointer-events: none;
       z-index: 840;
       transition: opacity 3s ease;
+      border: 0;
+      background: transparent;
+      padding: 4px 8px;
+      font: inherit;
+      cursor: pointer;
     }
 
     .evo-whisper.is-visible {
       opacity: .55;
+      pointer-events: auto;
     }
+    .evo-whisper.is-visible:hover,.evo-whisper.is-visible:focus-visible { opacity: .9; outline: 1px solid var(--line); outline-offset: 2px; }
 
     @media (max-width: 480px) {
       .fs-art { width: 58vw; height: 58vw; margin-bottom: 22px; }
@@ -1844,7 +1851,7 @@
 
   <audio id="playerAudio" preload="none"></audio>
 
-  <div class="evo-whisper" id="evoWhisper" aria-hidden="true">you've been here a while</div>
+  <button type="button" class="evo-whisper" id="evoWhisper" aria-hidden="true" tabindex="-1" aria-label="open the archive terminal">you've been here a while</button>
   <div class="memory-flash" id="memoryFlash" aria-live="polite"></div>
 
   <div class="fullscreen-player" id="fullscreenPlayer" role="dialog" aria-modal="true" aria-label="fullscreen music player" aria-hidden="true">
@@ -2717,7 +2724,11 @@
 
       function showWhisper() {
         const whisper = document.getElementById("evoWhisper");
-        if (whisper) whisper.classList.add("is-visible");
+        if (whisper) {
+          whisper.classList.add("is-visible");
+          whisper.setAttribute("aria-hidden", "false");
+          whisper.tabIndex = 0;
+        }
       }
 
       const STAGES = [
@@ -5044,8 +5055,9 @@
 
   <script>
     window.STANKQUILIZER_TELEMETRY_ENDPOINT = "https://stankquilizer-telemetry.stankquilizer.workers.dev/collect";
-    window.STANKQUILIZER_BUILD = "observatory-telemetry-v1";
+    window.STANKQUILIZER_BUILD = "observatory-sandbox-category6-7-v1";
   </script>
+  <script src="/category6.js" defer></script>
   <script src="/telemetry-client.js" defer></script>
 </body>
 </html>

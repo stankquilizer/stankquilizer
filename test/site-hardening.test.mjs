@@ -128,5 +128,16 @@ test('public site hardening remains additive and mobile-safe', async () => {
   const featureIds = [...dashboard.matchAll(/\{id:'([a-z-]+)',name:/g)].map(match => match[1]);
   assert.equal(featureIds.length, 21, 'Observatory feature matrix lists all Category 5 v2 features');
   assert.equal(new Set(featureIds).size, 21, 'Category 5 feature IDs are unique');
+  const category6 = await read('category6.js');
+  assert.ok(html.includes('/category6.js'));
+  assert.match(html, /id="evoWhisper" aria-hidden="true" tabindex="-1"/);
+  assert.match(category6, /command === 'stats'/);
+  assert.match(category6, /command === 'specimen'/);
+  assert.match(category6, /command === 'knock'/);
+  assert.match(category6, /command === 'crt on'/);
+  assert.match(category6, /Math\.random\(\) < 0\.025/);
+  assert.doesNotMatch(category6, /\beval\s*\(/);
+  assert.doesNotMatch(category6, /fetch\s*\(/, 'public archive commands stay on-device');
+  assert.doesNotThrow(() => new vm.Script(category6, { filename: 'category6.js' }));
   for (const feature of featureIds) assert.ok(html.includes(`emitFeature("${feature}"`), `public memory engine emits ${feature}`);
 });

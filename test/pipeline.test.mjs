@@ -109,7 +109,7 @@ test('migration schema and collector SQL deduplicate against SQLite', async () =
         bind(...nextValues) { values = nextValues; return this; },
         all() { return { results: database.prepare(sql).all(...values) }; },
         first() { return database.prepare(sql).get(...values) || null; },
-        run() { return database.prepare(sql).run(...values); }
+        run() { const result = database.prepare(sql).run(...values); return { ...result, meta: { changes: result.changes } }; }
       };
     },
     batch(statements) {
@@ -149,7 +149,7 @@ test('collector rejects unexpected fields and disallowed origins', async () => {
   assert.equal((await request({ events: [telemetryEvent()] }, 'https://attacker.example')).status, 403);
 });
 
-test('Observatory API stays protected and records QA probes as synthetic', async () => {
+test('Observatory API stays protected and keeps QA probes out of production events', async () => {
   const worker = (await importWorker('observatory/worker.js')).default;
   const { db, state } = mockD1();
   const env = { DB: db, OBSERVATORY_PASSWORD: 'test-secret' };
@@ -166,8 +166,79 @@ test('Observatory API stays protected and records QA probes as synthetic', async
   }), env);
   assert.equal(probe.status, 201);
   assert.deepEqual((await probe.json()).synthetic, true);
-  assert.equal(state.probes.length, 3);
-  assert.match(state.probes[2].values[3], /"synthetic":true/);
+  assert.equal(state.probes.length, 0, 'QA no longer inserts probe events into production telemetry');
+  assert.equal(state.events.length, 0);
+});
+
+test('sandbox commands stay in separate tables and clear only synthetic state', async () => {
+  const worker = (await importWorker('observatory/worker.js')).default;
+  const database = new DatabaseSync(':memory:');
+  database.exec(await read('observatory/migrations/0001_initial.sql'));
+  database.exec(await read('observatory/migrations/0002_sandbox.sql'));
+  const db = {
+    prepare(sql) {
+      let values = [];
+      return {
+        bind(...nextValues) { values = nextValues; return this; },
+        all() { return { results: database.prepare(sql).all(...values) }; },
+        first() { return database.prepare(sql).get(...values) || null; },
+        run() { const result = database.prepare(sql).run(...values); return { ...result, meta: { changes: result.changes } }; }
+      };
+    },
+    batch(statements) {
+      database.exec('BEGIN');
+      try {
+        const results = statements.map(statement => ({ meta: { changes: statement.run().changes } }));
+        database.exec('COMMIT');
+        return results;
+      } catch (error) {
+        database.exec('ROLLBACK');
+        throw error;
+      }
+    }
+  };
+  const env = { DB: db, OBSERVATORY_PASSWORD: 'test-secret' };
+  const denied = await worker.fetch(new Request('https://observatory.example/api/sandbox'), env);
+  assert.equal(denied.status, 401);
+  const login = await worker.fetch(new Request('https://observatory.example/api/login', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: 'test-secret' })
+  }), env);
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  const send = (method, body) => worker.fetch(new Request('https://observatory.example/api/sandbox', {
+    method, headers: { Cookie: cookie, 'content-type': 'application/json' },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) })
+  }), env);
+
+  const spawned = await (await send('POST', { action: 'spawn' })).json();
+  assert.equal(spawned.created, 1);
+  const id = spawned.sessionIds[0];
+  assert.match(id, /^[a-f0-9]{32}$/);
+  const skipped = await send('POST', { action: 'command', sessionId: id, command: 'skip' });
+  assert.equal(skipped.status, 200);
+  assert.equal((await (await send('POST', { action: 'command', sessionId: id, command: 'storm' })).json()).profile.skips, 5);
+  const qaProbe = await worker.fetch(new Request('https://observatory.example/api/qa', {
+    method: 'POST', headers: { Cookie: cookie, 'content-type': 'application/json' }, body: JSON.stringify({ scenario: 'track_started' })
+  }), env);
+  assert.equal(qaProbe.status, 201);
+  assert.equal((await send('POST', { action: 'command', sessionId: id, command: 'drop-real-session' })).status, 400);
+
+  const snapshot = await (await send('GET')).json();
+  assert.equal(snapshot.isolated, true);
+  assert.equal(snapshot.sessions.length, 1);
+  assert.equal(snapshot.sessions[0].skips, 5);
+  assert.equal(snapshot.events.filter(event => event.command === 'storm').length, 20);
+  const qaRows = await worker.fetch(new Request('https://observatory.example/api/qa', { headers: { Cookie: cookie } }), env);
+  assert.equal((await qaRows.json())[0].subject, 'track_started');
+  assert.equal(database.prepare('SELECT COUNT(*) AS n FROM sessions').get().n, 0);
+  assert.equal(database.prepare('SELECT COUNT(*) AS n FROM events').get().n, 0);
+  assert.equal(database.prepare('SELECT COUNT(*) AS n FROM sandbox_events').get().n, 23);
+
+  const cleared = await (await send('POST', { action: 'clear' })).json();
+  assert.equal(cleared.clearedSessions, 1);
+  assert.equal(cleared.clearedEvents, 23);
+  assert.equal((await (await send('GET')).json()).sessions.length, 0);
+  assert.equal(database.prepare('SELECT COUNT(*) AS n FROM sandbox_sessions').get().n, 0);
+  database.close();
 });
 
 test('HTML scripts parse and telemetry selectors exist in the preserved site', async () => {

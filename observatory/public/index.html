@@ -45,10 +45,11 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:10px 11p
 .feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .feature{border:1px solid var(--line);background:var(--panel);padding:12px}.feature-head{display:flex;justify-content:space-between;gap:8px}.feature-name{font-size:9px}.count{color:#aaa;font-size:9px}.state{font-size:8px;color:#666;margin-top:7px;line-height:1.6}.feature-detail{font-size:8px;color:#999;line-height:1.6;margin-top:8px;min-height:26px}.trace{height:2px;background:#242424;margin-top:9px}.trace i{display:block;height:100%;background:#777}
 .controls{display:flex;flex-wrap:wrap;gap:7px}.controls input{flex:1 1 160px}
+.sandbox-command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:12px}.sandbox-command-grid .btn{min-height:42px;text-transform:lowercase}.sandbox-select{min-width:220px;background:#090909;color:#eee;border:1px solid #303030;padding:10px}.sandbox-warning{border-color:#493d2a;color:#b6a580;line-height:1.8}.sandbox-label{display:inline-block;color:#b6a580;border:1px solid #574b34;padding:3px 6px;font-size:8px;letter-spacing:.08em;text-transform:uppercase}.sandbox-session{border:1px solid #302a20;background:#100f0c;padding:15px}.sandbox-actions td{white-space:normal}
 pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-size:9px;margin:0}
 .mobilebar{display:none}.more-sheet{display:none}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#151515;border:1px solid #333;padding:9px 12px;color:#ddd;font-size:9px;z-index:20}
-@media(max-width:850px){.app{grid-template-columns:1fr}aside{display:none}main{padding:20px 15px 82px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mobilebar{display:flex;position:fixed;z-index:10;bottom:0;left:0;right:0;background:#0c0c0c;border-top:1px solid var(--line);padding:6px 5px env(safe-area-inset-bottom);gap:2px}.mobilebar button{flex:1;text-align:center;padding:9px 3px;font-size:8px}.more-sheet{position:fixed;inset:0;background:#000b;z-index:15;align-items:flex-end}.more-sheet.open{display:flex}.more-inner{background:#101010;border-top:1px solid #333;width:100%;max-height:75dvh;overflow:auto;padding:12px}.more-head{display:flex;justify-content:space-between;color:#666;padding:5px 3px 10px}.more-nav{display:grid}.more-nav button{width:100%;border-bottom:1px solid #1c1c1c}.two{grid-template-columns:1fr}.feature-grid{grid-template-columns:1fr}.top{display:block}.status{margin-top:10px}}
+@media(max-width:850px){.app{grid-template-columns:1fr}aside{display:none}main{padding:20px 15px 82px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mobilebar{display:flex;position:fixed;z-index:10;bottom:0;left:0;right:0;background:#0c0c0c;border-top:1px solid var(--line);padding:6px 5px env(safe-area-inset-bottom);gap:2px}.mobilebar button{flex:1;text-align:center;padding:9px 3px;font-size:8px}.more-sheet{position:fixed;inset:0;background:#000b;z-index:15;align-items:flex-end}.more-sheet.open{display:flex}.more-inner{background:#101010;border-top:1px solid #333;width:100%;max-height:75dvh;overflow:auto;padding:12px}.more-head{display:flex;justify-content:space-between;color:#666;padding:5px 3px 10px}.more-nav{display:grid}.more-nav button{width:100%;border-bottom:1px solid #1c1c1c}.two{grid-template-columns:1fr}.feature-grid{grid-template-columns:1fr}.sandbox-command-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sandbox-select{width:100%}.top{display:block}.status{margin-top:10px}}
 @media(max-width:420px){main{padding-left:10px;padding-right:10px}.grid{gap:6px}.card{padding:12px}.metric .value{font-size:19px}.login-box{padding:22px}.field{display:grid;grid-template-columns:1fr}.field .btn{width:100%}}
 </style>
 </head>
@@ -89,7 +90,7 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
 (() => {
   'use strict';
 
-  const NAV = ['overview','live','sessions','memory','player','radio','projects','rediscovery','journey','features','qa','events','deploy','privacy','system'];
+  const NAV = ['overview','live','sessions','memory','player','radio','projects','rediscovery','journey','features','sandbox','qa','events','deploy','privacy','system'];
   const TRACKS = [
     'i get high',"i feel like you're the only one",'in the sunken place','zzz...',
     'the seraphim','fake gifted','stankquilizer type beat','unimagineable probability',
@@ -118,6 +119,7 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
     {id:'completion-state',name:'Completion state',events:['completion'],detail:'all required memory conditions were reached'},
     {id:'reset-rebirth',name:'res(e)t / new lives / rebirth',events:['reset_action','rebirth'],detail:'soft reset, full reset, or new life was chosen'}
   ];
+  let sandboxSelectedId = '';
 
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c =>
@@ -295,6 +297,55 @@ RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
       <div class="section"><div class="section-title">recent events</div>${eventTable(rows,'no rediscovery events yet')}</div>`;
   }
 
+  function sandbox(data) {
+    const sessions = data?.sessions || [];
+    const recent = data?.events || [];
+    const selected = sessions.find(session => session.id === sandboxSelectedId) || sessions[0] || null;
+    sandboxSelectedId = selected?.id || '';
+    const commandSpecs = [
+      ['play','next transmission'],['skip','skip track'],['replay','replay track'],['haunt','memory ghost'],
+      ['glitch','presentation glitch'],['heat','raise temperature'],['cooldown','cool down'],['rediscover','rediscovery'],
+      ['milestone','milestone'],['complete','complete journey'],['storm','event storm x20'],['reset','reset synthetic memory'],['rebirth','new generation']
+    ];
+    let options = '';
+    sessions.forEach(session => {
+      options += '<option value="' + esc(session.id) + '"' + (session.id === sandboxSelectedId ? ' selected' : '') + '>' +
+        esc(session.label) + ' · ' + esc(session.state) + ' · ' + esc(session.track) + '</option>';
+    });
+    if (!sessions.length) options = '<option value="">no simulated listeners yet</option>';
+    const commandButtons = commandSpecs.map(([command,label]) =>
+      '<button class="btn" data-sandbox-command="' + command + '"' + (selected ? '' : ' disabled') + '>' + label + '</button>'
+    ).join('');
+    let profile = '<div class="card muted">no simulated listener exists. spawn one to start the control room.</div>';
+    if (selected) {
+      profile = '<div class="grid">' +
+        '<div class="card sandbox-session"><div class="label">synthetic identity</div><div class="value">' + esc(selected.label) + '</div><div class="sub">sandbox only</div></div>' +
+        metric('current track',selected.track,'simulated') +
+        metric('state / generation',selected.state + ' / ' + selected.generation,'synthetic profile') +
+        metric('temperature',selected.temperature,'bounded 0-100') + '</div>' +
+        '<div class="grid section">' +
+        metric('plays / skips',selected.plays + ' / ' + selected.skips,'simulated') +
+        metric('ghosts / glitches',selected.ghosts + ' / ' + selected.glitches,'simulated') +
+        metric('rediscoveries / milestones',selected.rediscoveries + ' / ' + selected.milestones,'simulated') +
+        metric('rebirths / resets',selected.rebirths + ' / ' + selected.resets,'synthetic only') + '</div>';
+    }
+    const eventRows = recent.length ? recent.map(row => {
+      const session = sessions.find(item => item.id === row.session_id);
+      return '<tr><td>' + new Date(row.ts).toLocaleString() + '</td><td>' +
+        esc(session?.label || String(row.session_id || '').slice(0,10)) + '</td><td>' +
+        esc(row.command) + '</td><td>' + esc(row.detail) + '</td></tr>';
+    }).join('') : '<tr><td colspan="4">the tape is quiet</td></tr>';
+    return head('sandbox control room','synthetic listeners for testing and play. production visitors cannot be targeted.') +
+      '<div class="card sandbox-warning"><span class="sandbox-label">isolated simulation</span><p>every control below writes only to sandbox tables. these sessions never enter real live activity, visitor stats, or telemetry, and no command is sent to a listener’s browser.</p></div>' +
+      '<div class="section"><div class="section-title">test room</div><div class="card"><div class="controls">' +
+      '<button class="btn" data-sandbox-action="spawn">spawn listener</button><button class="btn" data-sandbox-action="crowd">spawn five</button><button class="btn" data-sandbox-action="clear">clear sandbox</button>' +
+      '<select class="sandbox-select" id="sandboxSession" aria-label="select synthetic listener">' + options + '</select></div>' +
+      '<div class="sandbox-command-grid">' + commandButtons + '</div></div></div>' +
+      '<div class="section"><div class="section-title">selected simulation</div>' + profile + '</div>' +
+      '<div class="section"><div class="section-title">sandbox event tape · ' + recent.length + ' recent synthetic actions</div><div class="table-wrap"><table class="sandbox-actions"><thead><tr><th>time</th><th>synthetic id</th><th>command</th><th>result</th></tr></thead><tbody>' + eventRows + '</tbody></table></div></div>' +
+      '<div class="section"><div class="card"><pre>limits: 12 synthetic listeners · 2,500 retained test actions\nevent storm: 20 synthetic rows per command\nclear sandbox removes only sandbox sessions and actions</pre></div></div>';
+  }
+
   function features(data) {
     const counts = new Map();
     for (const row of data?.counts || []) counts.set(row.type,(counts.get(row.type)||0)+(Number(row.count)||0));
@@ -390,6 +441,7 @@ mobile navigation is self-contained</pre></div></div></div>`;
     else if(page==='journey') { let d=null; try { d=await api('/memory'); } catch(e) {} html=journey(d); }
     else if(page==='features') { let d=null; try { d=await api('/feature-counts'); } catch(e) {} html=features(d); }
     else if(page==='qa') { let d=[]; try { d=await api('/qa?limit=50'); } catch(e) {} html=qa(d); }
+    else if(page==='sandbox') { let d=null; try { d=await api('/sandbox'); } catch(e) {} html=sandbox(d); }
     else if(page==='events'){
       let d=[]; try { d=await api('/events?limit=100'); } catch(e) {}
       html=events(d);
@@ -416,6 +468,30 @@ mobile navigation is self-contained</pre></div></div></div>`;
   }
 
   function wirePage(page) {
+    if(page==='sandbox'){
+      $('sandboxSession')?.addEventListener('change',event=>{sandboxSelectedId=event.target.value;loadPage('sandbox');});
+      document.querySelectorAll('[data-sandbox-action]').forEach(button=>button.addEventListener('click',async()=>{
+        const action=button.dataset.sandboxAction;
+        if(action==='clear'&&!confirm('clear only sandbox simulations and their synthetic action tape?'))return;
+        try {
+          const result=await api('/sandbox',{method:'POST',body:JSON.stringify({action})});
+          if(result.sessionIds?.length)sandboxSelectedId=result.sessionIds[0];
+          if(action==='clear')sandboxSelectedId='';
+          toast(action==='clear'?'sandbox cleared':(result.created||1)+' synthetic listener(s) ready');
+          await loadPage('sandbox');
+        } catch(error) { toast(error.message==='HTTP_409'?'sandbox listener limit reached':'sandbox action failed'); }
+      }));
+      document.querySelectorAll('[data-sandbox-command]').forEach(button=>button.addEventListener('click',async()=>{
+        sandboxSelectedId=$('sandboxSession')?.value||sandboxSelectedId;
+        if(!sandboxSelectedId)return;
+        button.disabled=true;
+        try {
+          const result=await api('/sandbox',{method:'POST',body:JSON.stringify({action:'command',sessionId:sandboxSelectedId,command:button.dataset.sandboxCommand})});
+          toast(result.detail||'simulation updated');
+          await loadPage('sandbox');
+        } catch(error) { toast(error.message==='HTTP_429'?'sandbox rate limit reached; wait a moment':'sandbox command failed'); await loadPage('sandbox'); }
+      }));
+    }
     if(page==='qa'){
       document.querySelectorAll('[data-qa]').forEach(btn=>btn.addEventListener('click',async()=>{
         try { await api('/qa',{method:'POST',body:JSON.stringify({scenario:btn.dataset.qa})}); toast('QA emitted: '+btn.dataset.qa); }

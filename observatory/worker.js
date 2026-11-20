@@ -6,6 +6,17 @@ const QA_SCENARIOS = new Set([
   'album_entered', 'release_clicked', 'rediscovery', 'memory_snapshot', 'memory_ghost',
   'milestone', 'unlock', 'completion', 'soft-reset', 'full-reset', 'rebirth', 'page_hidden'
 ]);
+const SANDBOX_TRACKS = [
+  'i get high', 'i feel like you\'re the only one', 'in the sunken place', 'zzz...',
+  'the seraphim', 'fake gifted', 'stankquilizer type beat', 'unimagineable probability',
+  'ignantamus', 'the chops', 'life of the loop', 'the earth i scar'
+];
+const SANDBOX_COMMANDS = new Set([
+  'play', 'skip', 'replay', 'haunt', 'glitch', 'heat', 'cooldown',
+  'rediscover', 'milestone', 'complete', 'reset', 'rebirth', 'storm'
+]);
+const MAX_SANDBOX_SESSIONS = 12;
+const MAX_SANDBOX_EVENTS = 2500;
 
 const baseHeaders = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' };
 const json = (value, status = 200, headers = {}) => new Response(JSON.stringify(value), {
@@ -59,6 +70,136 @@ function boundedRange(url) {
 
 async function rows(db, sql, ...values) {
   return (await db.prepare(sql).bind(...values).all()).results || [];
+}
+
+function sandboxProfile(value) {
+  let raw = {};
+  try { raw = JSON.parse(value || '{}'); } catch (_) {}
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) raw = {};
+  const count = key => Number.isFinite(Number(raw[key])) ? Math.max(0, Math.min(1000000, Math.floor(Number(raw[key])))) : 0;
+  return {
+    label: typeof raw.label === 'string' && /^echo-[a-f0-9]{4}$/i.test(raw.label) ? raw.label : 'echo-0000',
+    track: SANDBOX_TRACKS.includes(raw.track) ? raw.track : SANDBOX_TRACKS[0],
+    state: ['quiet','active','haunted','restless','complete'].includes(raw.state) ? raw.state : 'quiet',
+    temperature: Math.max(0, Math.min(100, count('temperature'))),
+    generation: Math.max(1, count('generation')),
+    plays: count('plays'), skips: count('skips'), replays: count('replays'),
+    ghosts: count('ghosts'), glitches: count('glitches'), rediscoveries: count('rediscoveries'),
+    milestones: count('milestones'), rebirths: count('rebirths'), resets: count('resets'),
+    completed: raw.completed === true
+  };
+}
+
+async function sandboxSnapshot(db) {
+  const [sessionRows, eventRows] = await Promise.all([
+    rows(db, 'SELECT id,created_at,updated_at,profile_json FROM sandbox_sessions ORDER BY updated_at DESC LIMIT 12'),
+    rows(db, "SELECT session_id,ts,command,detail FROM sandbox_events WHERE command NOT LIKE 'qa:%' ORDER BY id DESC LIMIT 60")
+  ]);
+  const sessions = sessionRows.map(row => ({
+    id: row.id,
+    createdAt: Number(row.created_at) || 0,
+    updatedAt: Number(row.updated_at) || 0,
+    ...sandboxProfile(row.profile_json)
+  }));
+  return { sessions, events: eventRows, isolated: true, maxSessions: MAX_SANDBOX_SESSIONS };
+}
+
+async function addSandboxEvent(db, sessionId, ts, command, detail) {
+  await db.prepare('INSERT INTO sandbox_events(session_id,ts,command,detail) VALUES(?,?,?,?)')
+    .bind(sessionId, ts, command.slice(0, 40), detail.slice(0, 120)).run();
+  await db.prepare('DELETE FROM sandbox_events WHERE id NOT IN (SELECT id FROM sandbox_events ORDER BY id DESC LIMIT ?)')
+    .bind(MAX_SANDBOX_EVENTS).run();
+}
+
+async function spawnSandboxSession(db, now) {
+  const count = Number((await db.prepare('SELECT COUNT(*) AS n FROM sandbox_sessions').first())?.n || 0);
+  if (count >= MAX_SANDBOX_SESSIONS) return null;
+  const id = crypto.randomUUID().replaceAll('-', '');
+  const profile = {
+    label: 'echo-' + id.slice(0, 4),
+    track: SANDBOX_TRACKS[Math.floor(Math.random() * SANDBOX_TRACKS.length)],
+    state: 'quiet', temperature: 35, generation: 1, plays: 0, skips: 0,
+    replays: 0, ghosts: 0, glitches: 0, rediscoveries: 0, milestones: 0,
+    rebirths: 0, resets: 0, completed: false
+  };
+  await db.prepare('INSERT INTO sandbox_sessions(id,created_at,updated_at,profile_json) VALUES(?,?,?,?)')
+    .bind(id, now, now, JSON.stringify(profile)).run();
+  await addSandboxEvent(db, id, now, 'spawn', 'synthetic listener entered the isolated test room');
+  return id;
+}
+
+async function sandboxApi(request, db) {
+  if (request.method === 'GET') return json(await sandboxSnapshot(db));
+  if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+  const length = Number(request.headers.get('content-length') || 0);
+  if (length > 4096) return json({ error: 'request too large' }, 413);
+  let body;
+  try { body = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'invalid request' }, 400);
+  const action = String(body.action || '');
+  const expectedKeys = action === 'command' ? new Set(['action','sessionId','command']) : new Set(['action']);
+  if (Object.keys(body).some(key => !expectedKeys.has(key))) return json({ error: 'unknown field' }, 400);
+  const now = Date.now();
+  if (action === 'clear') {
+    const events = await db.prepare('DELETE FROM sandbox_events').run();
+    const sessions = await db.prepare('DELETE FROM sandbox_sessions').run();
+    return json({ ok: true, clearedSessions: Number(sessions.meta?.changes) || 0, clearedEvents: Number(events.meta?.changes) || 0 });
+  }
+  if (action === 'spawn' || action === 'crowd') {
+    const total = action === 'crowd' ? 5 : 1;
+    const created = [];
+    for (let index = 0; index < total; index++) {
+      const id = await spawnSandboxSession(db, now + index);
+      if (!id) break;
+      created.push(id);
+    }
+    if (!created.length) return json({ error: 'sandbox is at its 12 listener limit; clear a few first' }, 409);
+    return json({ ok: true, created: created.length, sessionIds: created }, 201);
+  }
+  if (action !== 'command') return json({ error: 'unknown action' }, 400);
+  const sessionId = String(body.sessionId || '');
+  const command = String(body.command || '');
+  if (!/^[a-f0-9]{32}$/i.test(sessionId)) return json({ error: 'invalid synthetic session' }, 400);
+  if (!SANDBOX_COMMANDS.has(command)) return json({ error: 'unknown sandbox command' }, 400);
+  const row = await db.prepare('SELECT profile_json FROM sandbox_sessions WHERE id=?').bind(sessionId).first();
+  if (!row) return json({ error: 'synthetic session not found' }, 404);
+  const recentCount = Number((await db.prepare('SELECT COUNT(*) AS n FROM sandbox_events WHERE session_id=? AND ts>=?').bind(sessionId, now - 60000).first())?.n || 0);
+  if (recentCount >= 60) return json({ error: 'synthetic session command limit reached; wait a minute' }, 429);
+  if (command === 'storm') {
+    const lastStorm = Number((await db.prepare("SELECT MAX(ts) AS ts FROM sandbox_events WHERE session_id=? AND command='storm'").bind(sessionId).first())?.ts || 0);
+    if (lastStorm && now - lastStorm < 10000) return json({ error: 'event storm cooldown; wait ten seconds' }, 429);
+  }
+  const profile = sandboxProfile(row.profile_json);
+  let detail = '';
+  if (command === 'play') { profile.plays++; profile.state = 'active'; profile.track = SANDBOX_TRACKS[(SANDBOX_TRACKS.indexOf(profile.track) + 1) % SANDBOX_TRACKS.length]; detail = 'radio advanced to the next synthetic track'; }
+  else if (command === 'skip') { profile.skips++; profile.track = SANDBOX_TRACKS[(SANDBOX_TRACKS.indexOf(profile.track) + 1) % SANDBOX_TRACKS.length]; detail = 'synthetic listener skipped a track'; }
+  else if (command === 'replay') { profile.replays++; profile.plays++; profile.state = 'active'; detail = 'current synthetic track replayed'; }
+  else if (command === 'haunt') { profile.ghosts++; profile.state = 'haunted'; detail = 'memory ghost appeared in the simulation'; }
+  else if (command === 'glitch') { profile.glitches++; detail = 'presentation glitch triggered in the simulation'; }
+  else if (command === 'heat') { profile.temperature = Math.min(100, profile.temperature + 15); profile.state = 'restless'; detail = 'synthetic session temperature increased'; }
+  else if (command === 'cooldown') { profile.temperature = Math.max(0, profile.temperature - 15); profile.state = profile.temperature < 45 ? 'quiet' : 'active'; detail = 'synthetic session temperature decreased'; }
+  else if (command === 'rediscover') { profile.rediscoveries++; detail = 'a previously heard synthetic track returned'; }
+  else if (command === 'milestone') { profile.milestones++; detail = 'synthetic listening milestone reached'; }
+  else if (command === 'complete') { profile.completed = true; profile.state = 'complete'; detail = 'synthetic memory journey completed'; }
+  else if (command === 'reset') {
+    profile.resets++; profile.track = SANDBOX_TRACKS[0]; profile.state = 'quiet'; profile.temperature = 35;
+    profile.plays = profile.skips = profile.replays = profile.ghosts = profile.glitches = profile.rediscoveries = profile.milestones = 0;
+    profile.completed = false; detail = 'synthetic listener memory reset';
+  } else if (command === 'rebirth') {
+    profile.rebirths++; profile.resets++; profile.generation++;
+    profile.track = SANDBOX_TRACKS[0]; profile.state = 'quiet'; profile.temperature = 35;
+    profile.plays = profile.skips = profile.replays = profile.ghosts = profile.glitches = profile.rediscoveries = profile.milestones = 0;
+    profile.completed = false; detail = 'synthetic listener began a new generation';
+  } else if (command === 'storm') {
+    profile.plays += 12; profile.skips += 4; profile.milestones += 2; profile.rediscoveries += 2;
+    profile.state = 'restless'; profile.temperature = Math.min(100, profile.temperature + 25);
+    for (let index = 0; index < 20; index++) await addSandboxEvent(db, sessionId, now + index, 'storm', `synthetic burst ${index + 1} of 20`);
+    detail = '20 synthetic events added to this sandbox only';
+  }
+  await db.prepare('UPDATE sandbox_sessions SET updated_at=?,profile_json=? WHERE id=?')
+    .bind(now, JSON.stringify(profile), sessionId).run();
+  if (command !== 'storm') await addSandboxEvent(db, sessionId, now, command, detail);
+  return json({ ok: true, sessionId, command, detail, profile });
 }
 
 async function overview(db) {
@@ -213,6 +354,7 @@ async function fetchApi(request, env, url) {
     ]);
     return json({ counts, features, days });
   }
+  if (path === '/api/sandbox') return sandboxApi(request, env.DB);
   if (path === '/api/deployments' && request.method === 'GET') {
     return json(await rows(env.DB, 'SELECT id,created_at,build,ref,note FROM deployments ORDER BY created_at DESC LIMIT 100'));
   }
@@ -242,8 +384,13 @@ async function fetchApi(request, env, url) {
   }
   if (path === '/api/qa' && request.method === 'GET') {
     const limit = boundedLimit(url.searchParams.get('limit'), 50, 100);
-    return json(await rows(env.DB,
-      "SELECT id,session_id,ts,type,surface,subject,meta_json FROM events WHERE type='qa_event' ORDER BY ts DESC LIMIT ?", limit));
+    const probes = await rows(env.DB,
+      "SELECT id,session_id,ts,command,detail FROM sandbox_events WHERE command LIKE 'qa:%' ORDER BY id DESC LIMIT ?", limit);
+    return json(probes.map(row => {
+      const scenario = row.command.slice(3);
+      return { id: row.id, session_id: row.session_id, ts: row.ts, type: 'qa_event', surface: 'system',
+        subject: scenario, meta_json: JSON.stringify({ synthetic: true, scenario, detail: row.detail }) };
+    }));
   }
   if (path === '/api/qa' && request.method === 'POST') {
     let body;
@@ -251,16 +398,9 @@ async function fetchApi(request, env, url) {
     const scenario = String(body.scenario || 'session_start').slice(0, 60);
     if (!QA_SCENARIOS.has(scenario)) return json({ error: 'unknown scenario' }, 400);
     const sessionId = crypto.randomUUID().replaceAll('-', '');
-    const visitorKey = crypto.randomUUID().replaceAll('-', '');
-    const eventId = crypto.randomUUID().replaceAll('-', '');
     const now = Date.now();
-    const statements = [
-      env.DB.prepare('INSERT INTO telemetry_dedupe(event_id,session_id,accepted_at) VALUES(?,?,?)').bind(eventId, sessionId, now),
-      env.DB.prepare('INSERT INTO sessions(id,visitor_key,started_at,last_seen,build,event_count) VALUES(?,?,?,?,?,1)').bind(sessionId, visitorKey, now, now, 'observatory-qa'),
-      env.DB.prepare("INSERT INTO events(session_id,ts,type,surface,subject,meta_json) VALUES(?,?, 'qa_event','system',?,?)")
-        .bind(sessionId, now, scenario, JSON.stringify({ synthetic: true, scenario }))
-    ];
-    await env.DB.batch(statements);
+    await env.DB.prepare('INSERT INTO sandbox_events(session_id,ts,command,detail) VALUES(?,?,?,?)')
+      .bind(sessionId, now, 'qa:' + scenario, 'synthetic QA probe').run();
     return json({ ok: true, sessionId, synthetic: true }, 201);
   }
   return json({ error: 'not found' }, 404);
