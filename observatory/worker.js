@@ -482,6 +482,7 @@ async function publicAlbumApi(request, env, url) {
     return json({ version }, 200, headers);
   }
   if (url.pathname === '/public-api/albums') {
+    const mystery = await env.DB.prepare("SELECT id,title FROM releases WHERE id='rel-mystery' AND published=0 AND archived_at IS NULL LIMIT 1").first();
     const releases = await rows(env.DB, `SELECT id,slug,title,release_type,release_date,release_year,genres_json,description,accent,artwork_url,featured_artists_json,badges_json,featured,display_order,template,untitled_url,destination,card_json,features_json,track_count_override,runtime_override
       FROM releases WHERE published=1 AND archived_at IS NULL AND visibility='public' ORDER BY display_order,id`);
     const ids = releases.map(item => item.id);
@@ -489,7 +490,7 @@ async function publicAlbumApi(request, env, url) {
     if (ids.length) tracks = await rows(env.DB, `SELECT id,release_id,title,position,duration_ms,stream_type,stream_bytes FROM release_tracks WHERE published=1 AND release_id IN (${ids.map(() => '?').join(',')}) ORDER BY release_id,position`, ...ids);
     const headers = { ...cors, 'cache-control': 'public, max-age=15', etag: '"albums-' + (Number((await env.DB.prepare('SELECT version FROM album_config WHERE id=1').first())?.version || 1)) + '"' };
     if (request.headers.get('if-none-match') === headers.etag) return new Response(null, { status: 304, headers });
-    return json({ releases: releases.map(release => ({ ...release, genres: JSON.parse(release.genres_json), badges: JSON.parse(release.badges_json), featuredArtists: JSON.parse(release.featured_artists_json), card: JSON.parse(release.card_json), features: { ...JSON.parse(release.features_json), radio_eligible: false }, tracks: tracks.filter(track => track.release_id === release.id) })) }, 200, headers);
+    return json({ mystery: mystery ? { id: mystery.id, title: mystery.title } : null, releases: releases.map(release => ({ ...release, genres: JSON.parse(release.genres_json), badges: JSON.parse(release.badges_json), featuredArtists: JSON.parse(release.featured_artists_json), card: JSON.parse(release.card_json), features: { ...JSON.parse(release.features_json), radio_eligible: false }, tracks: tracks.filter(track => track.release_id === release.id) })) }, 200, headers);
   }
   return json({ error: 'not found' }, 404);
 }

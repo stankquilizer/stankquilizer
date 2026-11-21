@@ -64,6 +64,9 @@
       if(!response.ok)throw new Error('catalog unavailable');
       const etag=response.headers.get('etag');if(etag)sessionStorage.setItem('sq_album_etag',etag);
       const payload=await response.json(), releases=payload.releases||[];
+      const mysteryCard=container.querySelector('.album.unreleased-album');
+      const mysteryTitle=mysteryCard?.querySelector('h3');
+      if(mysteryTitle&&payload.mystery?.id==='rel-mystery'&&typeof payload.mystery.title==='string')mysteryTitle.textContent=payload.mystery.title;
       const shuffle=document.getElementById('shuffleBtn');
       for(const release of releases){
         let card=[...container.querySelectorAll('.album:not(.shuffle-album)')].find(node=>node.dataset.releaseId===release.id || canonical(node.querySelector('h3')?.textContent)===canonical(release.title));
