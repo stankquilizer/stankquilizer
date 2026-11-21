@@ -1243,6 +1243,9 @@
       display: none;
     }
 
+    .album[data-portal-enabled="false"] .portal-art,
+    .album[data-portal-enabled="false"] .portal-info { display: none !important; }
+
     @media (hover: hover) and (pointer: fine) {
       .portal-art,
       .portal-info {
@@ -2223,10 +2226,8 @@
     // "pick an album for me" - open a random release in a new tab
     const shuffleBtn = document.getElementById("shuffleBtn");
     if (shuffleBtn) {
-      const albumLinks = Array.from(
-        document.querySelectorAll(".album:not(.shuffle-album) .album-link")
-      );
       shuffleBtn.addEventListener("click", () => {
+        const albumLinks = Array.from(document.querySelectorAll(".album:not(.shuffle-album) .album-link")).filter(link => link.closest('.album')?.dataset.shuffleEnabled !== 'false');
         if (!albumLinks.length) return;
         const pick = albumLinks[Math.floor(Math.random() * albumLinks.length)];
         pick.click();
@@ -2860,6 +2861,10 @@
       document.querySelectorAll(".album:not(.shuffle-album) .album-link").forEach((link) => {
         link.addEventListener("click", flashGlitch);
       });
+      document.addEventListener("click", (event) => {
+        const link=event.target.closest?.('.album[data-database-release] .album-link');
+        if (link && link.closest('.album')?.dataset.vhsEnabled!=='false') flashGlitch();
+      });
     })();
 
     // keyboard navigation across release links and the shuffle tile
@@ -3076,6 +3081,10 @@
       document.querySelectorAll(".album:not(.shuffle-album) .album-link[href]").forEach((link) => {
         link.addEventListener("click", () => markLastPlayed(link.getAttribute("href")));
       });
+      document.addEventListener("click", (event) => {
+        const link = event.target.closest?.('.album[data-database-release] .album-link[href]');
+        if (link && link.closest('.album')?.dataset.memoryEnabled!=='false') markLastPlayed(link.getAttribute("href"));
+      });
 
       try {
         const stored = localStorage.getItem(LAST_PLAYED_KEY);
@@ -3108,19 +3117,17 @@
       const ACCENT_HUES = [4, 152, 231, 275, 43]; // matches albums 1-5's existing hover accents
       let hoveredAccentHue = null;
 
-      const realAlbums = Array.from(
-        document.querySelectorAll(".album:not(.shuffle-album):not(.unreleased-album)")
-      );
-      realAlbums.forEach((card, i) => {
-        const hue = ACCENT_HUES[i];
-        if (hue === undefined) return;
-        card.addEventListener("mouseenter", () => {
-          hoveredAccentHue = hue;
-        });
-        card.addEventListener("mouseleave", () => {
-          hoveredAccentHue = null;
-        });
-      });
+      const accentHue = (hex) => {
+        const value = String(hex || '').replace('#','');
+        if (!/^[0-9a-f]{6}$/i.test(value)) return null;
+        const [r,g,b]=[0,2,4].map(i=>parseInt(value.slice(i,i+2),16)/255);
+        const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+        if (!d) return 0;
+        let h=max===r?((g-b)/d)%6:max===g?(b-r)/d+2:(r-g)/d+4;
+        return Math.round((h*60+360)%360);
+      };
+      document.addEventListener('pointerover',(event)=>{const card=event.target.closest?.('.album:not(.shuffle-album):not(.unreleased-album)');if(card&&card.dataset.cursorTintEnabled!=='false')hoveredAccentHue=accentHue(getComputedStyle(card).getPropertyValue('--release-accent'))??ACCENT_HUES[Array.from(card.parentElement.children).indexOf(card)]??null;});
+      document.addEventListener('pointerout',(event)=>{if(event.target.closest?.('.album:not(.shuffle-album):not(.unreleased-album)'))hoveredAccentHue=null;});
 
       window.addEventListener("mousemove", (e) => {
         cursorEl.classList.add("is-active");
@@ -5057,6 +5064,7 @@
     window.STANKQUILIZER_TELEMETRY_ENDPOINT = "https://stankquilizer-telemetry.stankquilizer.workers.dev/collect";
     window.STANKQUILIZER_BUILD = "observatory-sandbox-category6-7-v1";
   </script>
+  <script src="/album-catalog.js" defer></script>
   <script src="/category6.js" defer></script>
   <script src="/telemetry-client.js" defer></script>
 </body>

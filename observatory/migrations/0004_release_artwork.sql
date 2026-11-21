@@ -1,0 +1,1 @@
+ALTER TABLE releases ADD COLUMN artwork_url TEXT NOT NULL DEFAULT '';

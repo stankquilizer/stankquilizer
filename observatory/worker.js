@@ -319,6 +319,34 @@ async function fetchApi(request, env, url) {
     await env.DB.prepare('UPDATE album_config SET version=version+1,updated_at=? WHERE id=1').bind(now).run();
     return json({ok:true});
   }
+  const releaseEdit = path.match(/^\/api\/releases\/([a-z0-9-]+)$/);
+  if (releaseEdit && request.method === 'PUT') {
+    let body; try { body = await request.json(); } catch (_) { return json({error:'bad json'},400); }
+    const id=releaseEdit[1], prior=await env.DB.prepare('SELECT * FROM releases WHERE id=?').bind(id).first();
+    if (!prior) return json({error:'release not found'},404);
+    const title=String(body.title??prior.title).trim().slice(0,120);
+    const slug=String(body.slug??prior.slug).trim().toLowerCase().slice(0,80);
+    if (!title || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return json({error:'invalid title or slug'},400);
+    const artwork=String(body.artworkUrl??prior.artwork_url??'').trim();
+    if (artwork && !/^https:\/\/raw\.githubusercontent\.com\/stankquilizer\/stankquilizer\/(?:main|codex\/site-hardening)\/[a-zA-Z0-9_./-]+\.(?:png|jpe?g|webp|avif)$/i.test(artwork)) return json({error:'artwork must be an image in the stankquilizer GitHub repository'},400);
+    const untitled=String(body.untitledUrl??prior.untitled_url).trim();
+    if (untitled && !/^https:\/\/untitled\.stream\/library\/project\/[A-Za-z0-9]+$/.test(untitled)) return json({error:'invalid Untitled release link'},400);
+    const genres=Array.isArray(body.genres)?body.genres.map(x=>String(x).trim().toLowerCase().slice(0,32)).filter(Boolean).slice(0,12):JSON.parse(prior.genres_json);
+    const listField=(value,fallback,maxItems,maxLength)=>Array.isArray(value)?value.map(x=>String(x).trim().slice(0,maxLength)).filter(Boolean).slice(0,maxItems):fallback;
+    const releaseType=['album','ep','single','other'].includes(body.releaseType)?body.releaseType:prior.release_type;
+    const priorFeatures=JSON.parse(prior.features_json||'{}');
+    const featureKeys=['shuffle_enabled','keyboard_enabled','portal_enabled','glitch_enabled','memory_enabled','radio_eligible','artwork_reveal_enabled','cursor_tint_enabled','vhs_enabled'];
+    const nextFeatures={...priorFeatures};
+    if(body.features&&typeof body.features==='object')for(const key of featureKeys)if(typeof body.features[key]==='boolean')nextFeatures[key]=body.features[key];
+    const fields={release_type:releaseType,release_date:String(body.releaseDate??prior.release_date).slice(0,20),release_year:Number(body.releaseYear??prior.release_year)||null,genres_json:JSON.stringify(genres),description:String(body.description??prior.description).slice(0,2000),accent:/^#[0-9a-f]{6}$/i.test(body.accent??prior.accent)?(body.accent??prior.accent):'#777777',producer:String(body.producer??prior.producer).slice(0,120),featured_artists_json:JSON.stringify(listField(body.featuredArtists,JSON.parse(prior.featured_artists_json),20,100)),credits_json:JSON.stringify(listField(body.credits,JSON.parse(prior.credits_json),40,200)),badges_json:JSON.stringify(listField(body.badges,JSON.parse(prior.badges_json),12,40)),label:String(body.label??prior.label).slice(0,120),catalogue_number:String(body.catalogueNumber??prior.catalogue_number).slice(0,80),artwork_url:artwork,untitled_url:untitled,destination:body.destination==='native'&&prior.published?'native':'untitled',template:['standard','featured','upcoming','mystery','ep','single'].includes(body.template)?body.template:prior.template,featured:body.featured===undefined?prior.featured:(body.featured?1:0),display_order:Number.isFinite(Number(body.displayOrder))?Math.max(0,Math.min(10000,Number(body.displayOrder))):prior.display_order,track_count_override:body.trackCountOverride===''||body.trackCountOverride==null?null:Math.max(0,Math.min(500,Number(body.trackCountOverride)||0)),runtime_override:body.runtimeOverride===''||body.runtimeOverride==null?null:Math.max(0,Math.min(86400000,Number(body.runtimeOverride)||0)),card_json:JSON.stringify(body.card&&typeof body.card==='object'?body.card:JSON.parse(prior.card_json)),features_json:JSON.stringify(nextFeatures)};
+    const now=Date.now();
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO release_revisions(release_id,created_at,action,snapshot_json) VALUES(?,?,?,?)').bind(id,now,'edited',JSON.stringify(prior)),
+      env.DB.prepare(`UPDATE releases SET title=?,slug=?,release_type=?,release_date=?,release_year=?,genres_json=?,description=?,accent=?,producer=?,featured_artists_json=?,credits_json=?,badges_json=?,label=?,catalogue_number=?,artwork_url=?,untitled_url=?,destination=?,template=?,featured=?,display_order=?,track_count_override=?,runtime_override=?,card_json=?,features_json=?,updated_at=?,version=version+1 WHERE id=?`).bind(title,slug,fields.release_type,fields.release_date,fields.release_year,fields.genres_json,fields.description,fields.accent,fields.producer,fields.featured_artists_json,fields.credits_json,fields.badges_json,fields.label,fields.catalogue_number,fields.artwork_url,fields.untitled_url,fields.destination,fields.template,fields.featured,fields.display_order,fields.track_count_override,fields.runtime_override,fields.card_json,fields.features_json,now,id),
+      env.DB.prepare('UPDATE album_config SET version=version+1,updated_at=? WHERE id=1').bind(now)
+    ]);
+    return json({ok:true,id,updatedAt:now});
+  }
   if (path === '/api/health') {
     await env.DB.prepare('SELECT 1').first();
     return json({ ok: true, time: Date.now(), database: 'online' });
@@ -439,21 +467,26 @@ async function fetchApi(request, env, url) {
 }
 
 async function publicAlbumApi(request, env, url) {
+  const origin = request.headers.get('origin') || '';
+  const cors = origin === 'https://stankquilizer.stankquilizer.workers.dev'
+    ? { 'access-control-allow-origin': origin, 'access-control-allow-methods': 'GET, OPTIONS', 'access-control-allow-headers': 'if-none-match', vary: 'Origin' }
+    : {};
+  if (request.method === 'OPTIONS') return new Response(null,{status:204,headers:cors});
   if (request.method !== 'GET') return json({ error: 'method not allowed' }, 405);
   if (url.pathname === '/public-api/albums/version') {
     const row = await env.DB.prepare('SELECT version FROM album_config WHERE id=1').first();
     const version = Number(row?.version || 1);
-    const headers = { etag: '"albums-' + version + '"', 'cache-control': 'public, max-age=15' };
+    const headers = { ...cors, etag: '"albums-' + version + '"', 'cache-control': 'public, max-age=15' };
     if (request.headers.get('if-none-match') === headers.etag) return new Response(null, { status: 304, headers });
     return json({ version }, 200, headers);
   }
   if (url.pathname === '/public-api/albums') {
-    const releases = await rows(env.DB, `SELECT id,slug,title,release_type,release_date,release_year,genres_json,description,accent,featured_artists_json,badges_json,featured,display_order,template,untitled_url,destination,card_json,features_json,track_count_override,runtime_override
+    const releases = await rows(env.DB, `SELECT id,slug,title,release_type,release_date,release_year,genres_json,description,accent,artwork_url,featured_artists_json,badges_json,featured,display_order,template,untitled_url,destination,card_json,features_json,track_count_override,runtime_override
       FROM releases WHERE published=1 AND archived_at IS NULL AND visibility='public' ORDER BY display_order,id`);
     const ids = releases.map(item => item.id);
     let tracks = [];
     if (ids.length) tracks = await rows(env.DB, `SELECT id,release_id,title,position,duration_ms,stream_type,stream_bytes FROM release_tracks WHERE published=1 AND release_id IN (${ids.map(() => '?').join(',')}) ORDER BY release_id,position`, ...ids);
-    const headers = { 'cache-control': 'public, max-age=15', etag: '"albums-' + (Number((await env.DB.prepare('SELECT version FROM album_config WHERE id=1').first())?.version || 1)) + '"' };
+    const headers = { ...cors, 'cache-control': 'public, max-age=15', etag: '"albums-' + (Number((await env.DB.prepare('SELECT version FROM album_config WHERE id=1').first())?.version || 1)) + '"' };
     if (request.headers.get('if-none-match') === headers.etag) return new Response(null, { status: 304, headers });
     return json({ releases: releases.map(release => ({ ...release, genres: JSON.parse(release.genres_json), badges: JSON.parse(release.badges_json), featuredArtists: JSON.parse(release.featured_artists_json), card: JSON.parse(release.card_json), features: JSON.parse(release.features_json), tracks: tracks.filter(track => track.release_id === release.id) })) }, 200, headers);
   }
