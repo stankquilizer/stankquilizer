@@ -482,9 +482,9 @@ async function publicAlbumApi(request, env, url) {
     return json({ version }, 200, headers);
   }
   if (url.pathname === '/public-api/albums') {
-    const mystery = await env.DB.prepare("SELECT id,title FROM releases WHERE id='rel-mystery' AND published=0 AND archived_at IS NULL LIMIT 1").first();
+    const mystery = await env.DB.prepare("SELECT id,title FROM releases WHERE id='rel-mystery' AND archived_at IS NULL LIMIT 1").first();
     const releases = await rows(env.DB, `SELECT id,slug,title,release_type,release_date,release_year,genres_json,description,accent,artwork_url,featured_artists_json,badges_json,featured,display_order,template,untitled_url,destination,card_json,features_json,track_count_override,runtime_override
-      FROM releases WHERE published=1 AND archived_at IS NULL AND visibility='public' ORDER BY display_order,id`);
+      FROM releases WHERE id<>'rel-mystery' AND published=1 AND archived_at IS NULL AND visibility='public' ORDER BY display_order,id`);
     const ids = releases.map(item => item.id);
     let tracks = [];
     if (ids.length) tracks = await rows(env.DB, `SELECT id,release_id,title,position,duration_ms,stream_type,stream_bytes FROM release_tracks WHERE published=1 AND release_id IN (${ids.map(() => '?').join(',')}) ORDER BY release_id,position`, ...ids);
