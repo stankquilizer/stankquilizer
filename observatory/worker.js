@@ -294,6 +294,31 @@ async function featureCounts(db, since) {
 
 async function fetchApi(request, env, url) {
   const path = url.pathname;
+  if (path === '/api/releases' && request.method === 'GET') {
+    return json(await rows(env.DB, 'SELECT * FROM releases ORDER BY display_order,id'));
+  }
+  if (path === '/api/releases' && request.method === 'POST') {
+    let body; try { body = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+    const title = String(body.title || '').trim().slice(0,120);
+    const slug = String(body.slug || title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')).slice(0,80);
+    const kind = ['album','ep','single','other'].includes(body.releaseType) ? body.releaseType : 'album';
+    if (!title || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return json({ error: 'valid title and slug required' }, 400);
+    const now = Date.now(), id = 'rel-' + crypto.randomUUID().replaceAll('-','');
+    const genres = Array.isArray(body.genres) ? body.genres.map(x=>String(x).trim().toLowerCase().slice(0,32)).filter(Boolean).slice(0,12) : [];
+    await env.DB.prepare(`INSERT INTO releases(id,slug,title,release_type,release_date,release_year,genres_json,description,accent,producer,featured_artists_json,credits_json,label,catalogue_number,badges_json,featured,display_order,template,visibility,published,untitled_url,destination,card_json,features_json,created_at,updated_at)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id,slug,title,kind,String(body.releaseDate||'').slice(0,20),Number(body.releaseYear)||null,JSON.stringify(genres),String(body.description||'').slice(0,2000),/^#[0-9a-f]{6}$/i.test(body.accent||'')?body.accent:'#777777',String(body.producer||'').slice(0,120),JSON.stringify(Array.isArray(body.featuredArtists)?body.featuredArtists.map(x=>String(x).slice(0,80)).slice(0,12):[]),JSON.stringify(body.credits&&typeof body.credits==='object'?body.credits:{}),String(body.label||'').slice(0,120),String(body.catalogueNumber||'').slice(0,80),JSON.stringify(Array.isArray(body.badges)?body.badges.map(x=>String(x).slice(0,32)).slice(0,8):[]),body.featured?1:0,Number(body.displayOrder)||100,['standard','featured','upcoming','mystery','ep','single'].includes(body.template)?body.template:'standard','public',0,String(body.untitledUrl||'').startsWith('https://untitled.stream/')?body.untitledUrl:'','untitled','{}',JSON.stringify({shuffle:true,keyboard:true,portal:true,glitch:true,memory:true,radioEligible:false}),now,now).run();
+    await env.DB.batch([env.DB.prepare('UPDATE album_config SET version=version+1,updated_at=? WHERE id=1').bind(now),env.DB.prepare('INSERT INTO release_revisions(release_id,created_at,action,snapshot_json) VALUES(?,?,?,?)').bind(id,now,'created',JSON.stringify({title,slug}))]);
+    return json({ ok:true,id },201);
+  }
+  const releaseMatch = path.match(/^\/api\/releases\/([a-z0-9-]+)\/(publish|archive|restore)$/);
+  if (releaseMatch && request.method === 'POST') {
+    const [,id,action]=releaseMatch, now=Date.now();
+    const field = action==='publish' ? 'published=1,archived_at=NULL' : action==='archive' ? 'archived_at=?' : 'archived_at=NULL';
+    const result = action==='archive' ? await env.DB.prepare(`UPDATE releases SET ${field},updated_at=?,version=version+1 WHERE id=?`).bind(now,now,id).run() : await env.DB.prepare(`UPDATE releases SET ${field},updated_at=?,version=version+1 WHERE id=?`).bind(now,id).run();
+    if (!result.meta?.changes) return json({error:'release not found'},404);
+    await env.DB.prepare('UPDATE album_config SET version=version+1,updated_at=? WHERE id=1').bind(now).run();
+    return json({ok:true});
+  }
   if (path === '/api/health') {
     await env.DB.prepare('SELECT 1').first();
     return json({ ok: true, time: Date.now(), database: 'online' });
@@ -413,9 +438,35 @@ async function fetchApi(request, env, url) {
   return json({ error: 'not found' }, 404);
 }
 
+async function publicAlbumApi(request, env, url) {
+  if (request.method !== 'GET') return json({ error: 'method not allowed' }, 405);
+  if (url.pathname === '/public-api/albums/version') {
+    const row = await env.DB.prepare('SELECT version FROM album_config WHERE id=1').first();
+    const version = Number(row?.version || 1);
+    const headers = { etag: '"albums-' + version + '"', 'cache-control': 'public, max-age=15' };
+    if (request.headers.get('if-none-match') === headers.etag) return new Response(null, { status: 304, headers });
+    return json({ version }, 200, headers);
+  }
+  if (url.pathname === '/public-api/albums') {
+    const releases = await rows(env.DB, `SELECT id,slug,title,release_type,release_date,release_year,genres_json,description,accent,featured_artists_json,badges_json,featured,display_order,template,untitled_url,destination,card_json,features_json,track_count_override,runtime_override
+      FROM releases WHERE published=1 AND archived_at IS NULL AND visibility='public' ORDER BY display_order,id`);
+    const ids = releases.map(item => item.id);
+    let tracks = [];
+    if (ids.length) tracks = await rows(env.DB, `SELECT id,release_id,title,position,duration_ms,stream_type,stream_bytes FROM release_tracks WHERE published=1 AND release_id IN (${ids.map(() => '?').join(',')}) ORDER BY release_id,position`, ...ids);
+    const headers = { 'cache-control': 'public, max-age=15', etag: '"albums-' + (Number((await env.DB.prepare('SELECT version FROM album_config WHERE id=1').first())?.version || 1)) + '"' };
+    if (request.headers.get('if-none-match') === headers.etag) return new Response(null, { status: 304, headers });
+    return json({ releases: releases.map(release => ({ ...release, genres: JSON.parse(release.genres_json), badges: JSON.parse(release.badges_json), featuredArtists: JSON.parse(release.featured_artists_json), card: JSON.parse(release.card_json), features: JSON.parse(release.features_json), tracks: tracks.filter(track => track.release_id === release.id) })) }, 200, headers);
+  }
+  return json({ error: 'not found' }, 404);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith('/public-api/albums')) {
+      try { return await publicAlbumApi(request, env, url); }
+      catch (_) { return json({ error: 'album catalog unavailable' }, 503, { 'access-control-allow-origin': 'https://stankquilizer.stankquilizer.workers.dev' }); }
+    }
     if (url.pathname === '/api/login' && request.method === 'POST') {
       let body;
       try { body = await request.json(); } catch (_) { body = {}; }

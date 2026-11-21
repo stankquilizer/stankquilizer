@@ -90,7 +90,7 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
 (() => {
   'use strict';
 
-  const NAV = ['overview','live','sessions','memory','player','radio','projects','rediscovery','journey','features','sandbox','qa','events','deploy','privacy','system'];
+  const NAV = ['overview','live','sessions','memory','player','radio','projects','releases','rediscovery','journey','features','sandbox','qa','events','deploy','privacy','system'];
   const TRACKS = [
     'i get high',"i feel like you're the only one",'in the sunken place','zzz...',
     'the seraphim','fake gifted','stankquilizer type beat','unimagineable probability',
@@ -347,6 +347,14 @@ RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
       '<div class="section"><div class="card"><pre>limits: 12 synthetic listeners · 2,500 retained test actions\nevent storm: 20 synthetic rows per command\nclear sandbox removes only sandbox sessions and actions</pre></div></div>';
   }
 
+  function releaseManager(items) {
+    return head('release manager','manage public album cards. Untitled stays the destination until native audio is ready.') +
+      '<div class="card"><form id="releaseCreate" class="controls"><input name="title" required maxlength="120" placeholder="release title"><select name="releaseType" class="sandbox-select"><option value="album">album</option><option value="ep">ep</option><option value="single">single</option><option value="other">other</option></select><input name="releaseDate" type="date"><input name="genres" placeholder="genres, comma separated"><button class="btn">create draft</button></form></div>'+
+      '<div class="section"><div class="table-wrap"><table><thead><tr><th>release</th><th>type</th><th>destination</th><th>tracks</th><th>status</th><th>actions</th></tr></thead><tbody>'+
+      (items||[]).map(item=>'<tr><td>'+esc(item.title)+'</td><td>'+esc(item.release_type)+'</td><td>'+esc(item.destination)+'</td><td>'+esc(item.track_count_override??0)+'</td><td>'+ (item.archived_at?'archived':item.published?'published':'draft')+'</td><td>'+(!item.published?'<button class="btn" data-release-action="publish" data-id="'+esc(item.id)+'">publish</button>':'<button class="btn" data-release-action="archive" data-id="'+esc(item.id)+'">archive</button>')+'</td></tr>').join('')+'</tbody></table></div></div>'+
+      '<div class="section card"><div class="label">media status</div><p class="muted">R2 is not enabled for this Cloudflare account yet. Current releases remain on Untitled. Track uploads, native playback, and downloads will activate after the bucket is provisioned.</p></div>';
+  }
+
   function features(data) {
     const counts = new Map();
     for (const row of data?.counts || []) counts.set(row.type,(counts.get(row.type)||0)+(Number(row.count)||0));
@@ -438,6 +446,7 @@ mobile navigation is self-contained</pre></div></div></div>`;
     else if(page==='player') { let d=null; try { d=await api('/radio'); } catch(e) {} html=player(d); }
     else if(page==='radio') { let d=null; try { d=await api('/radio'); } catch(e) {} html=radio(d); }
     else if(page==='projects') { let d=null; try { d=await api('/projects'); } catch(e) {} html=projects(d); }
+    else if(page==='releases') { let d=[]; try { d=await api('/releases'); } catch(e) {} html=releaseManager(d); }
     else if(page==='rediscovery') { let d=null; try { d=await api('/rediscoveries'); } catch(e) {} html=rediscoveries(d); }
     else if(page==='journey') { let d=null; try { d=await api('/memory'); } catch(e) {} html=journey(d); }
     else if(page==='features') { let d=null; try { d=await api('/feature-counts'); } catch(e) {} html=features(d); }
@@ -469,6 +478,10 @@ mobile navigation is self-contained</pre></div></div></div>`;
   }
 
   function wirePage(page) {
+    if(page==='releases'){
+      $('releaseCreate')?.addEventListener('submit',async event=>{event.preventDefault();const form=new FormData(event.currentTarget);try{await api('/releases',{method:'POST',body:JSON.stringify({title:form.get('title'),releaseType:form.get('releaseType'),releaseDate:form.get('releaseDate'),genres:String(form.get('genres')||'').split(',')})});toast('draft release created');await loadPage('releases');}catch(_){toast('release could not be created');}});
+      document.querySelectorAll('[data-release-action]').forEach(button=>button.addEventListener('click',async()=>{try{await api('/releases/'+encodeURIComponent(button.dataset.id)+'/'+button.dataset.releaseAction,{method:'POST'});toast('release updated');await loadPage('releases');}catch(_){toast('release update failed');}}));
+    }
     if(page==='sandbox'){
       $('sandboxSession')?.addEventListener('change',event=>{sandboxSelectedId=event.target.value;loadPage('sandbox');});
       document.querySelectorAll('[data-sandbox-action]').forEach(button=>button.addEventListener('click',async()=>{
