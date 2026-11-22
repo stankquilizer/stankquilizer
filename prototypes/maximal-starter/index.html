@@ -143,6 +143,11 @@ body{background-image:radial-gradient(ellipse at 18% 12%,rgba(95,166,255,.16),tr
 @media(max-width:760px){.world-planet{right:-34vw;top:18vh;opacity:.2}.world-horizon{height:20vh;opacity:.13}.world-orbit{left:8%;top:54%}.drift-word{font-size:8px;max-width:120px;opacity:.34}.drift-word:nth-child(4n){font-size:9px}}
 @media(prefers-reduced-motion:reduce){.world-field i,.blob,.drift-word{animation:none!important}.flashlight,.blob-tracker{transition:none!important}.release .photism-layer{animation:none!important}.release.is-photism .photism-layer{opacity:.65}}
 
+
+/* consistent eased feedback for every control surface - no blanket transition:all */
+button,.fx-toggle,.theme,#system-lab button,.nav a,.next,.release .stamp,.release .genre{transition-property:color,background-color,border-color,box-shadow,transform,opacity,filter;transition-duration:.42s;transition-timing-function:var(--ease)}
+#system-lab [data-system]{transition-duration:.48s}
+
 </style>
 <style id="maximal-signal-effects">
 :root{--pointer-x:50vw;--pointer-y:45vh}
