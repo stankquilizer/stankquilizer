@@ -38,6 +38,39 @@ test('the mosh, blob and flashlight systems remain independently controllable', 
   assert.match(scripts[1], /mosh-b/);
 });
 
+test('cover hover chooses data mosh or photism with an even 50/50 split', () => {
+  assert.match(scripts[1], /Math\\.random\\(\\)<\\.5/);
+  assert.match(scripts[1], /data-hover-visual/);
+  assert.match(scripts[1], /is-photism/);
+  assert.match(scripts[1], /photism-layer/);
+  assert.match(html, /@keyframes photism-exposure/);
+  assert.match(html, /--photo-dx/);
+  assert.match(html, /--photo-hue/);
+});
+
+test('floating phrases use measured free space and collision buffers', () => {
+  assert.match(scripts[3], /function installDriftField/);
+  assert.match(scripts[3], /getBoundingClientRect/);
+  assert.match(scripts[3], /const intersects=/);
+  assert.match(scripts[3], /obstacles\\.some\\(o=>intersects\\(box,o\\)\\)/);
+  assert.match(scripts[3], /placed\\.some\\(o=>intersects\\(box,o\\)\\)/);
+  assert.match(scripts[3], /left:r\\.left-17/);
+  assert.match(scripts[3], /right:r\\.right\\+17/);
+  assert.match(scripts[3], /translate3d\\(0,-5px,0\\)/);
+  for (const page of albumFiles) {
+    const pageScripts = [...page.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(m => m[1]);
+    assert.equal(pageScripts.length, 2);
+    pageScripts.forEach(source => assert.doesNotThrow(() => new Script(source)));
+    assert.match(pageScripts[1], /const intersects=/);
+    assert.match(pageScripts[1], /Math\\.random\\(\\)<\\.5/);
+    assert.match(page, /cover-photism/);
+    assert.match(page, /cover-mosh-layer/);
+  }
+  const mysteryScripts = [...mysteryPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(m => m[1]);
+  mysteryScripts.forEach(source => assert.doesNotThrow(() => new Script(source)));
+  assert.match(mysteryScripts[1], /const intersects=/);
+});
+
 test('the experimental control room exposes 60 distinct systems', () => {
   assert.equal((html.match(/data-system="/g) || []).length, 60);
   assert.match(html, /id="active-count"/);
@@ -81,6 +114,10 @@ test('reduced motion remains respected and loader retains its minimum wait', () 
   assert.match(scripts[2], /img\.decode\(\)/);
   assert.match(scripts[2], /document\.fonts\.ready/);
   assert.match(scripts[2], /Promise\.allSettled/);
+});
+
+test('all prototype pages use hyphens rather than em dashes', () => {
+  assert.doesNotMatch([html, ...albumFiles, mysteryPage].join('\\n'), /—/);
 });
 
 test('all authored CSS blocks have balanced braces', () => {
