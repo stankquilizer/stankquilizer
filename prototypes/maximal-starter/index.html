@@ -334,7 +334,19 @@ const classMap={density:'lab-pixel',intensity:'lab-strobe',freeze:'lab-freeze',c
 const classes=new Map();
 function refresh(){count.textContent=String(active.size).padStart(2,'0')+' / 60';status.textContent=active.size?'field altered':'awaiting input';buttons.forEach(b=>b.setAttribute('aria-pressed',String(active.has(b.dataset.system))));}
 function activate(b,on){const key=b.dataset.system,group=b.dataset.group,cls=classMap[key];if(on){active.add(key);if(cls)root.classList.add(cls);root.classList.add(familyClass[group]);}else{active.delete(key);if(cls)root.classList.remove(cls);if(!buttons.some(x=>x.dataset.group===group&&active.has(x.dataset.system)))root.classList.remove(familyClass[group]);}refresh();feedback.textContent=(on?'engaged / ':'released / ')+b.querySelector('span:nth-child(2)').textContent;}
-buttons.forEach(b=>b.addEventListener('click',()=>activate(b,!active.has(b.dataset.system))));
+function customAction(b){const key=b.dataset.system;if(key==='palette'){const colors=['#3988ff','#a17cff','#00d5cf','#ec6aa8','#8cc7ff','#e7c2ff'];const i=(Number(root.dataset.paletteIndex||0)+1)%colors.length;root.dataset.paletteIndex=i;document.documentElement.style.setProperty('--red',colors[i]);feedback.textContent='palette '+(i+1)+' / 6';}
+else if(key==='theme'){document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';localStorage.setItem('stank-maximal-theme',document.documentElement.dataset.theme);feedback.textContent='theme shifted';}
+else if(key==='chaos'){root.classList.toggle('lab-chaos');root.classList.remove('lab-calm');}
+else if(key==='calm'){root.classList.toggle('lab-calm');root.classList.remove('lab-chaos');}
+else if(key==='random'){randomize();}
+else if(key==='reset'){clear();}
+else if(key==='save'){save();}
+else if(key==='restore'){restore();}
+else if(key==='copy'){const value='stankquilizer signal / '+[...active].join(', ');if(navigator.clipboard?.writeText)navigator.clipboard.writeText(value).then(()=>feedback.textContent='signal coordinates copied').catch(()=>feedback.textContent='clipboard unavailable');else feedback.textContent='clipboard unavailable';}
+else if(key==='surprise'){const choices=['lab-rain','lab-vortex','lab-mirror','lab-rgb','lab-ghost','lab-strobe','lab-darkroom'];const c=choices[Math.floor(Math.random()*choices.length)];root.classList.toggle(c);feedback.textContent='surprise signal / '+c.replace('lab-','');}
+}
+buttons.forEach(b=>b.addEventListener('click',()=>{const on=!active.has(b.dataset.system);activate(b,on);if(on)customAction(b);}));
+
 function randomize(){buttons.forEach(b=>activate(b,Math.random()<.27));}
 function clear(){buttons.forEach(b=>activate(b,false));}
 function save(){localStorage.setItem(savedKey,JSON.stringify([...active]));feedback.textContent='configuration stored locally';}
