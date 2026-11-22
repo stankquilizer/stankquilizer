@@ -144,7 +144,7 @@ body{background-image:radial-gradient(ellipse at 18% 12%,rgba(95,166,255,.16),tr
 @media(prefers-reduced-motion:reduce){.world-field i,.blob,.drift-word{animation:none!important}.flashlight,.blob-tracker{transition:none!important}.release .photism-layer{animation:none!important}.release.is-photism .photism-layer{opacity:.65}}
 
 
-/* consistent eased feedback for every control surface - no blanket transition:all */
+/* consistent eased feedback for every control surface - no wildcard transition */
 button,.fx-toggle,.theme,#system-lab button,.nav a,.next,.release .stamp,.release .genre{transition-property:color,background-color,border-color,box-shadow,transform,opacity,filter;transition-duration:.42s;transition-timing-function:var(--ease)}
 #system-lab [data-system]{transition-duration:.48s}
 
