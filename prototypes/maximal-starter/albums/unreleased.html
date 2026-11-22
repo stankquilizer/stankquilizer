@@ -22,6 +22,56 @@ body{background-image:radial-gradient(ellipse at 18% 12%,rgba(93,167,255,.16),tr
 /* consistent eased interaction feedback */
 button,.tool,.portal,.glyph,.meta span{transition-property:color,background-color,border-color,box-shadow,transform,opacity,filter;transition-duration:.45s;transition-timing-function:cubic-bezier(.18,.75,.22,1)}
 
+</style><style id="world-generation-motion-pass">
+/* ten procedural alien-world environments */
+.world-field{isolation:isolate;transition:opacity 1.2s cubic-bezier(.2,.75,.2,1),filter 1.2s cubic-bezier(.2,.75,.2,1)}
+.world-field::before,.world-field::after{content:"";position:absolute;display:block;pointer-events:none;transition:transform 1.8s cubic-bezier(.18,.75,.22,1),opacity 1.4s ease,filter 1.4s ease}
+.world-field::before{width:min(58vw,760px);height:min(38vw,420px);left:-14vw;top:28vh;border:1px solid rgba(148,207,255,.18);border-radius:50%;transform:rotate(-24deg) rotateX(68deg);box-shadow:0 0 65px rgba(87,163,255,.08),inset 0 0 55px rgba(115,190,255,.06);opacity:.52}
+.world-field::after{width:34vw;height:34vw;right:12vw;bottom:-25vw;border-radius:50%;background:radial-gradient(circle,rgba(117,190,255,.14),rgba(111,153,255,.05) 42%,transparent 70%);filter:blur(10px);opacity:.7}
+.world-field .world-moon{transition:all 1.8s cubic-bezier(.18,.75,.22,1)}
+.world-field .world-horizon{transition:all 1.8s cubic-bezier(.18,.75,.22,1)}
+html[data-world="0"] .world-field{background:radial-gradient(ellipse at 80% 24%,rgba(91,157,255,.12),transparent 34%)}
+html[data-world="1"] .world-field{background:radial-gradient(ellipse at 18% 22%,rgba(172,188,255,.2),transparent 26%),radial-gradient(ellipse at 78% 72%,rgba(69,190,255,.13),transparent 34%)}
+html[data-world="1"] .world-planet{right:12%;top:8%;width:clamp(150px,22vw,330px);opacity:.25}
+html[data-world="1"] .world-moon{left:9%;top:18%;width:clamp(90px,14vw,210px);height:clamp(90px,14vw,210px);border-radius:50%;background:radial-gradient(circle at 35% 30%,#e7f7ff,rgba(128,180,255,.4) 38%,rgba(75,107,190,.06) 72%);box-shadow:0 0 65px rgba(127,186,255,.22);opacity:.62}
+html[data-world="2"] .world-field{background:radial-gradient(ellipse at 50% 85%,rgba(83,164,255,.18),transparent 48%),linear-gradient(110deg,transparent 45%,rgba(132,195,255,.05) 50%,transparent 55%)}
+html[data-world="2"] .world-planet{width:clamp(130px,21vw,310px);right:8%;top:19%;border-radius:18% 18% 48% 48%;transform:rotate(35deg);opacity:.24}
+html[data-world="2"] .world-moon{left:18%;top:12%;width:16vw;height:16vw;border:1px solid rgba(185,222,255,.34);background:linear-gradient(135deg,rgba(190,226,255,.15),transparent);clip-path:polygon(50% 0,100% 38%,78% 100%,18% 82%,0 24%);opacity:.7}
+html[data-world="3"] .world-field{background:radial-gradient(ellipse at 42% 42%,rgba(94,123,255,.16),transparent 42%),radial-gradient(ellipse at 88% 88%,rgba(55,189,255,.12),transparent 35%)}
+html[data-world="3"] .world-planet{left:4%;right:auto;top:7%;width:clamp(180px,26vw,380px);opacity:.2}
+html[data-world="3"] .world-horizon{height:34vh;clip-path:polygon(0 55%,9% 42%,18% 59%,27% 22%,39% 52%,51% 16%,61% 48%,72% 27%,83% 58%,92% 34%,100% 50%,100% 100%,0 100%);filter:hue-rotate(22deg)}
+html[data-world="4"] .world-field{background:repeating-linear-gradient(128deg,transparent 0 11vw,rgba(143,199,255,.035) 11.1vw 11.2vw,transparent 11.3vw 21vw)}
+html[data-world="4"] .world-planet{border-radius:8% 50% 12% 50%;transform:rotate(32deg) scale(.9);left:12%;right:auto;top:14%;opacity:.24}
+html[data-world="4"] .world-moon{right:12%;left:auto;top:54%;width:clamp(100px,16vw,230px);height:clamp(100px,16vw,230px);background:linear-gradient(135deg,rgba(208,239,255,.3),rgba(81,141,255,.06));clip-path:polygon(50% 0,100% 34%,78% 100%,17% 81%,0 24%);opacity:.7}
+html[data-world="5"] .world-field{background:radial-gradient(ellipse at 15% 80%,rgba(119,111,255,.18),transparent 40%),radial-gradient(ellipse at 72% 18%,rgba(80,211,255,.16),transparent 42%),radial-gradient(ellipse at 55% 55%,rgba(166,145,255,.08),transparent 55%)}
+html[data-world="5"] .world-planet{width:clamp(250px,40vw,580px);right:28%;top:26%;opacity:.13;filter:blur(1px)}
+html[data-world="5"] .world-moon{width:9vw;height:9vw;left:13%;top:25%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,rgba(134,173,255,.15) 70%);opacity:.65}
+html[data-world="6"] .world-field{background:radial-gradient(ellipse at 50% 42%,rgba(27,48,110,.18),transparent 44%),radial-gradient(ellipse at 50% 100%,rgba(112,188,255,.12),transparent 50%)}
+html[data-world="6"] .world-planet{width:clamp(240px,38vw,540px);left:32%;right:auto;top:16%;opacity:.25;filter:brightness(.68)}
+html[data-world="6"] .world-orbit{width:70vw;height:25vw;left:15%;top:30%;border-color:rgba(190,221,255,.42);transform:rotate(-12deg) rotateX(68deg)}
+html[data-world="7"] .world-field{background:radial-gradient(ellipse at 22% 66%,rgba(78,177,255,.14),transparent 28%),radial-gradient(ellipse at 75% 34%,rgba(151,156,255,.14),transparent 32%)}
+html[data-world="7"] .world-planet{width:clamp(130px,20vw,290px);left:15%;right:auto;top:14%;opacity:.22}
+html[data-world="7"] .world-moon{width:clamp(130px,19vw,270px);height:clamp(80px,12vw,170px);right:9%;left:auto;top:58%;border-radius:48% 52% 34% 66%;background:radial-gradient(ellipse at 35% 30%,rgba(217,245,255,.35),rgba(92,154,255,.08) 70%);box-shadow:0 0 55px rgba(86,179,255,.2);opacity:.65}
+html[data-world="8"] .world-field{background:repeating-linear-gradient(90deg,transparent 0 12vw,rgba(129,186,255,.045) 12.1vw 12.3vw,transparent 12.4vw 24vw),radial-gradient(ellipse at 50% 80%,rgba(97,166,255,.14),transparent 52%)}
+html[data-world="8"] .world-planet{width:clamp(150px,24vw,350px);right:5%;top:4%;border-radius:20%;transform:rotate(45deg) scaleY(1.25);opacity:.18}
+html[data-world="8"] .world-moon{left:12%;top:54%;width:8vw;height:30vh;border-radius:48%;background:linear-gradient(180deg,rgba(193,231,255,.18),rgba(79,128,225,.02));filter:blur(2px);opacity:.75}
+html[data-world="9"] .world-field{background:radial-gradient(ellipse at 50% 82%,rgba(47,163,255,.2),transparent 44%),linear-gradient(180deg,transparent 48%,rgba(92,179,255,.055) 49%,transparent 50%)}
+html[data-world="9"] .world-planet{width:clamp(200px,30vw,440px);right:34%;top:-7%;opacity:.16}
+html[data-world="9"] .world-horizon{height:25vh;clip-path:polygon(0 25%,8% 38%,17% 21%,26% 45%,36% 26%,46% 42%,58% 18%,68% 40%,78% 22%,89% 43%,100% 20%,100% 100%,0 100%);filter:blur(3px)}
+[data-theme="light"] .world-field{filter:saturate(.88) brightness(1.1)}
+[data-theme="dark"] .world-field{filter:saturate(1.2) brightness(.86)}
+[data-theme="light"] .world-field::before{border-color:rgba(62,117,205,.2);box-shadow:0 0 70px rgba(91,151,255,.08),inset 0 0 45px rgba(105,157,255,.06)}
+[data-theme="dark"] .world-field::before{border-color:rgba(165,211,255,.24)}
+/* motion pass: smooth the existing motion language without flattening its character */
+.release,.release .art,.release .art img,.release .meta h2,.art-ornament,.art-type,.world-field i,.world-field::before,.world-field::after,.drift-word,.gap-note,.gap-note .move-word,.theme,.fx-toggle,#system-lab button,.system-lab,.next,.mystery-entry{transition-timing-function:cubic-bezier(.18,.75,.22,1)}
+.release,.release .art,.release .art img,.world-field i,.drift-word,.gap-note .move-word{backface-visibility:hidden;transform-style:preserve-3d}
+.gap-note{animation:note-twitch 5.4s steps(1,end) infinite;transform-origin:20% 55%}
+.gap-note .move-word{display:inline-block;position:relative;cursor:pointer;transition:transform .72s cubic-bezier(.16,1,.3,1),letter-spacing .72s cubic-bezier(.16,1,.3,1),filter .72s}
+.gap-note .move-word:hover{transform:translate3d(18px,-11px,0) rotate(-8deg) skewX(-9deg) scale(1.16);letter-spacing:.08em;filter:drop-shadow(0 0 14px var(--red))}
+.gap-note:has(.move-word:hover){animation-play-state:paused}
+@keyframes note-twitch{0%,91%,100%{translate:0 0;rotate:0deg}92%{translate:1px -1px;rotate:-.6deg}93%{translate:-2px 1px;rotate:.7deg}94%{translate:1px 0;rotate:-.3deg}95%{translate:0 0;rotate:0deg}}
+@media(max-width:760px){.world-field::before{width:88vw;height:55vw;left:-28vw;top:36vh}.world-field::after{width:70vw;height:70vw;right:-20vw;bottom:-38vw}.gap-note .move-word:hover{transform:translate3d(8px,-5px,0) rotate(-5deg) scale(1.08)}}
+@media(prefers-reduced-motion:reduce){.world-field,.world-field::before,.world-field::after,.world-field i,.gap-note,.gap-note .move-word{animation:none!important;transition:none!important}.gap-note .move-word:hover{transform:none}}
 </style></head><body><div class="world-field" aria-hidden="true"><i class="world-planet"></i><i class="world-moon"></i><i class="world-orbit"></i><i class="world-horizon"></i></div><main class="page"><header class="top"><a href="../index.html">← return to the signal collage</a><span>release file / 06 / unlisted</span></header><div class="portal" id="portal"><div class="glyph">?</div></div><h1>???</h1><p class="sub">an unreleased transmission. its title, artwork, date, track count and sequence have not been published. this page exists as a living placeholder; nothing here implies that audio is available.</p><div class="meta"><span>unreleased</span><span>track count unknown</span><span>metadata sealed</span></div><p class="secret" id="secret">you found a signal, not a spoiler. this page will change when the release is ready.</p><section class="tools" aria-label="ten experimental interactions"><button class="tool" data-action="distort"><b>01 / distortion</b><small>fracture the portal</small></button><button class="tool" data-action="beam"><b>02 / flashlight</b><small>darkroom reveal</small></button><button class="tool" data-action="blob"><b>03 / blob field</b><small>move the light</small></button><button class="tool" data-action="palette"><b>04 / palette</b><small>shift the spectrum</small></button><button class="tool" data-action="theme"><b>05 / theme</b><small>invert the world</small></button><button class="tool" data-action="glyph"><b>06 / glyph</b><small>rotate the unknown</small></button><button class="tool" data-action="pulse"><b>07 / pulse</b><small>change the rhythm</small></button><button class="tool" data-action="memory"><b>08 / memory</b><small>remember this visit</small></button><button class="tool" data-action="secret"><b>09 / hidden note</b><small>look closer</small></button><button class="tool" data-action="reset"><b>10 / reset</b><small>restore the signal</small></button></section><footer class="foot"><span>stankquilizer / independent archive</span><span>no audio / no track titles / no fabricated metadata</span></footer></main><script>
 (()=>{const body=document.body,portal=document.getElementById('portal'),glyph=portal.querySelector('.glyph'),secret=document.getElementById('secret');let n=0;const colors=['#3988ff','#a17cff','#00c9bd','#ec6aa8','#74cfff'];const beam=document.createElement('div');beam.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(circle 160px at var(--x,50%) var(--y,50%),transparent 0 55%,rgba(0,3,12,.8) 100%)';body.appendChild(beam);const blob=document.createElement('div');blob.style.cssText='position:fixed;width:220px;height:220px;border-radius:50%;pointer-events:none;z-index:2;filter:blur(25px);background:radial-gradient(circle,rgba(70,150,255,.25),transparent 70%);transform:translate(-50%,-50%)';body.appendChild(blob);document.addEventListener('pointermove',e=>{document.documentElement.style.setProperty('--x',e.clientX+'px');document.documentElement.style.setProperty('--y',e.clientY+'px');blob.style.left=e.clientX+'px';blob.style.top=e.clientY+'px';if(body.dataset.beam==='on')beam.style.opacity='1'},{passive:true});document.addEventListener('pointerleave',()=>{if(body.dataset.beam==='on')beam.style.opacity='0'});document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>{const k=b.dataset.action;if(k==='distort'){portal.animate([{transform:'translateX(-7px) skewX(3deg)',filter:'hue-rotate(90deg)'},{transform:'translateX(7px) skewX(-3deg)',filter:'contrast(2)'},{transform:'none',filter:'none'}],{duration:420})}if(k==='beam'){body.dataset.beam=body.dataset.beam==='on'?'off':'on';beam.style.opacity=body.dataset.beam==='on'?'1':'0'}if(k==='blob'){blob.style.filter=blob.style.filter.includes('hue-rotate')?'blur(25px)':'blur(4px) hue-rotate(100deg)'}if(k==='palette'){n=(n+1)%colors.length;document.documentElement.style.setProperty('--accent',colors[n])}if(k==='theme'){document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'}if(k==='glyph'){glyph.textContent=['?','∴','◌','⌁','⟁'][++n%5]}if(k==='pulse'){portal.style.transform=portal.style.transform?'':'scale(1.06)'}if(k==='memory'){localStorage.setItem('stank-mystery-visit',String(Date.now()));b.querySelector('small').textContent='visit remembered'}if(k==='secret')secret.classList.toggle('show');if(k==='reset'){document.documentElement.dataset.theme='light';document.documentElement.style.setProperty('--accent','#3988ff');body.dataset.beam='off';beam.style.opacity='0';portal.style.transform='';glyph.textContent='?';secret.classList.remove('show')}});portal.addEventListener('click',()=>{portal.classList.toggle('fracture');secret.classList.toggle('show')});})();
 </script><script>
@@ -34,5 +84,39 @@ button,.tool,.portal,.glyph,.meta span{transition-property:color,background-colo
   for(let i=0;i<count;i++){const node=document.createElement('span');node.className='drift-word';node.textContent=phrases[Math.floor(Math.random()*phrases.length)];node.style.setProperty('--drift-duration',(7+Math.random()*8).toFixed(1)+'s');node.style.setProperty('--drift-delay',(-Math.random()*8).toFixed(1)+'s');node.style.setProperty('--drift-rotate',((Math.random()-.5)*3).toFixed(1)+'deg');node.style.setProperty('--drift-x',((Math.random()-.5)*18).toFixed(1)+'px');field.appendChild(node);const w=Math.min(160,Math.max(44,node.offsetWidth)),h=Math.max(14,node.offsetHeight);let ok=false;for(let attempt=0;attempt<120;attempt++){const x=10+Math.random()*Math.max(1,vw-w-20),y=12+Math.random()*Math.max(1,vh-h-24),box={left:x-13,top:y-13,right:x+w+13,bottom:y+h+13};if(obstacles.some(o=>intersects(box,o))||placed.some(o=>intersects(box,o)))continue;node.style.left=x+'px';node.style.top=y+'px';placed.push(box);ok=true;break}if(!ok)node.remove()}
  }
  const schedule=()=>{if(!scheduled)scheduled=requestAnimationFrame(layout)};addEventListener('resize',schedule,{passive:true});addEventListener('scroll',schedule,{passive:true});if(document.fonts?.ready)document.fonts.ready.then(schedule).catch(schedule);schedule();
+})();
+</script>
+<script id="world-generation-and-prewarm">
+(()=> {
+ const root=document.documentElement;
+ const world=Math.floor(Math.random()*10);
+ root.dataset.world=String(world);
+ root.dataset.worldReady='true';
+ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const warm=()=>{
+  // Decode every image and font used by this page before marking its visual state warm.
+  const imageJobs=[...document.images].map(img=>{
+   if(typeof img.decode==='function') return img.decode().catch(()=>{});
+   return Promise.resolve();
+  });
+  const fontJob=document.fonts?.ready||Promise.resolve();
+  const theme=root.dataset.theme||'light';
+  const state={world,theme,images:document.images.length,ready:false};
+  Promise.allSettled([...imageJobs,fontJob]).then(()=>{
+   // Touch the current world and theme styles once so the browser resolves their computed styles.
+   getComputedStyle(document.querySelector('.world-field')||document.body).transform;
+   state.ready=true;
+   window.__stankVisualState=state;
+   root.dataset.visualWarm='true';
+  });
+ };
+ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',warm,{once:true}); else warm();
+ // Prime the artwork hover layers without displaying them.
+ const cards=[...document.querySelectorAll('.release,.cover-wrap')];
+ cards.forEach(card=>{
+  const art=card.querySelector('img')||card;
+  if(art instanceof HTMLImageElement && art.complete) { try{art.decode?.().catch(()=>{});}catch(e){} }
+  card.addEventListener('pointerenter',()=>{card.style.setProperty('--interaction-ready','1')},{once:true,passive:true});
+ });
 })();
 </script></body></html>
