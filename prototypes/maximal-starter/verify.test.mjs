@@ -59,7 +59,8 @@ test('floating phrases use measured free space and collision buffers', () => {
   assert.match(scripts[3], /left:r\.left-17/);
   assert.match(scripts[3], /right:r\.right\+17/);
   assert.match(scripts[3], /\.kicker/);
-  assert.match(html, /drift-float[\s\S]{0,120}translate3d\(0,-5px,0\)/);
+  assert.match(html, /drift-float[\s\S]{0,140}translate3d\(var\(--drift-x,0px\),-8px,0\)/);
+  assert.match(scripts[3], /--drift-x/);
   for (const page of albumFiles) {
     const pageScripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1]);
     assert.equal(pageScripts.length, 2);
