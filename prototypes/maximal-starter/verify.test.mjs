@@ -155,7 +155,7 @@ test('ten alien-world variants are randomized on every page load and remain them
 test('the main-page drift phrase pool is doubled and the moving word is interactive', () => {
   const match = scripts[3].match(/const phrases=\[([\s\S]*?)\];/);
   assert.ok(match);
-  assert.equal((match[1].match(/'[^']+'/g) || []).length, 60);
+  assert.equal((match[1].match(/'(?:\\.|[^'\\])*'/g) || []).length, 60);
   assert.match(scripts[3], /count=vw<760\?8:18/);
   assert.match(html, /class="move-word">moving<\/span>/);
   assert.match(html, /@keyframes note-twitch/);
