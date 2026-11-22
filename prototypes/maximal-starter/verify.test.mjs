@@ -8,6 +8,7 @@ const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].
 const styles = [...html.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)].map(match => match[1]);
 const slugs = ['stnkqlzr', 'summer-two-six-ep', 'from-now-on', 'u-with-me', 'ultimate-lie'];
 const albumFiles = slugs.map(slug => readFileSync(new URL('./albums/' + slug + '.html', import.meta.url), 'utf8'));
+const mysteryPage = readFileSync(new URL('./albums/unreleased.html', import.meta.url), 'utf8');
 
 test('all homepage scripts parse and the loader boot sequence stays before body', () => {
   assert.equal(scripts.length, 4);
@@ -58,6 +59,14 @@ test('each native album page has the correct number of numbered tracks and ten m
     assert.doesNotMatch(page, /untitled\.stream\/library\/project/);
     assert.match(page, /track title not yet synced/);
   });
+});
+
+test('the unreleased mystery album has a native placeholder page and ten interactions', () => {
+  assert.match(html, /href="albums\/unreleased\.html"/);
+  assert.match(mysteryPage, /<h1>\?\?\?<\/h1>/);
+  assert.equal((mysteryPage.match(/data-action="/g) || []).length, 10);
+  assert.match(mysteryPage, /track count unknown/);
+  assert.doesNotMatch(mysteryPage, /untitled\.stream/);
 });
 
 test('known radio track titles are preserved without fabricating missing titles', () => {
