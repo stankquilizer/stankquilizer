@@ -140,6 +140,9 @@ test('ten alien-world variants are randomized on every page load and remain them
   assert.ok(worldScript, 'homepage world generator is installed');
   assert.match(worldScript, /root\.dataset\.world=String\(world\)/);
   assert.match(worldScript, /Promise\.allSettled/);
+  assert.match(worldScript, /prewarmedWorlds:20/);
+  assert.match(worldScript, /for\(const theme of \['light','dark'\]\)/);
+  assert.match(worldScript, /variant<10/);
   assert.match(html, /id="world-generation-motion-pass"/);
   for (let i = 0; i < 10; i++) assert.match(html, new RegExp('data-world="' + i + '"'));
   assert.match(html, /\[data-theme="light"\] \.world-field/);
