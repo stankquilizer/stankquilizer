@@ -29,18 +29,20 @@ test('the five homepage release cards route to native album files, never Untitle
   }
 });
 
-test('the mosh, blob and flashlight systems remain independently controllable', () => {
+test('the mosh, blob and atmospheric illumination systems remain independently controllable', () => {
   assert.equal((html.match(/data-fx-toggle=/g) || []).length, 3);
   for (const key of ['mosh', 'blob', 'beam']) assert.match(html, new RegExp('data-fx-toggle="' + key + '" aria-pressed="true"'));
   assert.match(html, /id="flashlight"/);
   assert.match(html, /id="blobTracker"/);
   assert.match(scripts[1], /mosh-a/);
   assert.match(scripts[1], /mosh-b/);
+  assert.match(html, /world-planet/);
+  assert.match(html, /world-horizon/);
 });
 
 test('cover hover chooses data mosh or photism with an even 50/50 split', () => {
-  assert.match(scripts[1], /Math\\.random\\(\\)<\\.5/);
-  assert.match(scripts[1], /data-hover-visual/);
+  assert.match(scripts[1], /Math\.random\(\)<\.5/);
+  assert.match(scripts[1], /dataset\.hoverVisual/);
   assert.match(scripts[1], /is-photism/);
   assert.match(scripts[1], /photism-layer/);
   assert.match(html, /@keyframes photism-exposure/);
@@ -52,21 +54,21 @@ test('floating phrases use measured free space and collision buffers', () => {
   assert.match(scripts[3], /function installDriftField/);
   assert.match(scripts[3], /getBoundingClientRect/);
   assert.match(scripts[3], /const intersects=/);
-  assert.match(scripts[3], /obstacles\\.some\\(o=>intersects\\(box,o\\)\\)/);
-  assert.match(scripts[3], /placed\\.some\\(o=>intersects\\(box,o\\)\\)/);
-  assert.match(scripts[3], /left:r\\.left-17/);
-  assert.match(scripts[3], /right:r\\.right\\+17/);
-  assert.match(scripts[3], /translate3d\\(0,-5px,0\\)/);
+  assert.match(scripts[3], /obstacles\.some\(o=>intersects\(box,o\)\)/);
+  assert.match(scripts[3], /placed\.some\(o=>intersects\(box,o\)\)/);
+  assert.match(scripts[3], /left:r\.left-17/);
+  assert.match(scripts[3], /right:r\.right\+17/);
+  assert.match(scripts[3], /translate3d\(0,-5px,0\)/);
   for (const page of albumFiles) {
-    const pageScripts = [...page.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(m => m[1]);
+    const pageScripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1]);
     assert.equal(pageScripts.length, 2);
     pageScripts.forEach(source => assert.doesNotThrow(() => new Script(source)));
     assert.match(pageScripts[1], /const intersects=/);
-    assert.match(pageScripts[1], /Math\\.random\\(\\)<\\.5/);
+    assert.match(pageScripts[1], /Math\.random\(\)<\.5/);
     assert.match(page, /cover-photism/);
     assert.match(page, /cover-mosh-layer/);
   }
-  const mysteryScripts = [...mysteryPage.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(m => m[1]);
+  const mysteryScripts = [...mysteryPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   mysteryScripts.forEach(source => assert.doesNotThrow(() => new Script(source)));
   assert.match(mysteryScripts[1], /const intersects=/);
 });
@@ -117,7 +119,7 @@ test('reduced motion remains respected and loader retains its minimum wait', () 
 });
 
 test('all prototype pages use hyphens rather than em dashes', () => {
-  assert.doesNotMatch([html, ...albumFiles, mysteryPage].join('\\n'), /—/);
+  assert.doesNotMatch([html, ...albumFiles, mysteryPage].join('\n'), /—/);
 });
 
 test('all authored CSS blocks have balanced braces', () => {
@@ -129,4 +131,7 @@ test('all authored CSS blocks have balanced braces', () => {
     assert.equal(css.length, 1);
     assert.equal((css[0].match(/\{/g) || []).length, (css[0].match(/\}/g) || []).length, 'album page ' + slugs[i]);
   }
+  const mysteryCss = [...mysteryPage.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]);
+  assert.equal(mysteryCss.length, 1);
+  assert.equal((mysteryCss[0].match(/\{/g) || []).length, (mysteryCss[0].match(/\}/g) || []).length, 'mystery page');
 });
