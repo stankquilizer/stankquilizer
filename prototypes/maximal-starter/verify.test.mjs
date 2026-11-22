@@ -121,6 +121,12 @@ test('reduced motion remains respected and loader retains its minimum wait', () 
   assert.match(scripts[2], /Promise\.allSettled/);
 });
 
+test('interactive controls use eased transitions without blanket transition-all', () => {
+  const allPages = [html, ...albumFiles, mysteryPage].join('\\n');
+  assert.match(allPages, /transition-property:color,background-color,border-color,box-shadow,transform,opacity,filter/);
+  assert.doesNotMatch(allPages, /transition:\\s*all/i);
+});
+
 test('all prototype pages use hyphens rather than em dashes', () => {
   assert.doesNotMatch([html, ...albumFiles, mysteryPage].join('\n'), /\u2014/);
 });
