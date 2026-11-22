@@ -75,6 +75,8 @@ test('floating phrases use measured free space and collision buffers', () => {
   const mysteryScripts = [...mysteryPage.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   mysteryScripts.forEach(source => assert.doesNotThrow(() => new Script(source)));
   assert.match(mysteryScripts[1], /const intersects=/);
+  assert.match(mysteryScripts[0], /pointerleave/);
+  assert.doesNotMatch(mysteryPage, /#beam\\{[^}]*opacity:0!important/);
 });
 
 test('the experimental control room exposes 60 distinct systems', () => {
