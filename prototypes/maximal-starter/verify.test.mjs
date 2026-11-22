@@ -41,7 +41,7 @@ test('the mosh, blob and atmospheric illumination systems remain independently c
 });
 
 test('cover hover chooses data mosh or photism with an even 50/50 split', () => {
-  assert.match(scripts[1], /Math\.random\(\)<\.5/);
+  assert.match(scripts[1], /effects\.mosh&&Math\.random\(\)<\.5/);
   assert.match(scripts[1], /dataset\.hoverVisual/);
   assert.match(scripts[1], /is-photism/);
   assert.match(scripts[1], /photism-layer/);
