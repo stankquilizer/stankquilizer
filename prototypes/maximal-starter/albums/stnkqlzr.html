@@ -43,8 +43,8 @@ button,.tool,.tool-btn,.track,.track button,.system-bar button,.page-actions but
 .world-field::before,.world-field::after{content:"";position:absolute;display:block;pointer-events:none;transition:transform 1.8s cubic-bezier(.18,.75,.22,1),opacity 1.4s ease,filter 1.4s ease}
 .world-field::before{width:min(58vw,760px);height:min(38vw,420px);left:-14vw;top:28vh;border:1px solid rgba(148,207,255,.18);border-radius:50%;transform:rotate(-24deg) rotateX(68deg);box-shadow:0 0 65px rgba(87,163,255,.08),inset 0 0 55px rgba(115,190,255,.06);opacity:.52}
 .world-field::after{width:34vw;height:34vw;right:12vw;bottom:-25vw;border-radius:50%;background:radial-gradient(circle,rgba(117,190,255,.14),rgba(111,153,255,.05) 42%,transparent 70%);filter:blur(10px);opacity:.7}
-.world-field .world-moon{transition:all 1.8s cubic-bezier(.18,.75,.22,1)}
-.world-field .world-horizon{transition:all 1.8s cubic-bezier(.18,.75,.22,1)}
+.world-field .world-moon{transition:transform 1.8s cubic-bezier(.18,.75,.22,1),opacity 1.8s cubic-bezier(.18,.75,.22,1),filter 1.8s cubic-bezier(.18,.75,.22,1),background-color 1.8s cubic-bezier(.18,.75,.22,1),border-color 1.8s cubic-bezier(.18,.75,.22,1),box-shadow 1.8s cubic-bezier(.18,.75,.22,1)}
+.world-field .world-horizon{transition:transform 1.8s cubic-bezier(.18,.75,.22,1),opacity 1.8s cubic-bezier(.18,.75,.22,1),filter 1.8s cubic-bezier(.18,.75,.22,1),background-color 1.8s cubic-bezier(.18,.75,.22,1),border-color 1.8s cubic-bezier(.18,.75,.22,1),box-shadow 1.8s cubic-bezier(.18,.75,.22,1)}
 :is(html,.world-prewarm)[data-world="0"] .world-field{background:radial-gradient(ellipse at 80% 24%,rgba(91,157,255,.12),transparent 34%)}
 :is(html,.world-prewarm)[data-world="1"] .world-field{background:radial-gradient(ellipse at 18% 22%,rgba(172,188,255,.2),transparent 26%),radial-gradient(ellipse at 78% 72%,rgba(69,190,255,.13),transparent 34%)}
 :is(html,.world-prewarm)[data-world="1"] .world-planet{right:12%;top:8%;width:clamp(150px,22vw,330px);opacity:.25}
