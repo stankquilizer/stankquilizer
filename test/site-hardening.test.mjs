@@ -1,0 +1,143 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile, readdir } from 'node:fs/promises';
+import { webcrypto } from 'node:crypto';
+import vm from 'node:vm';
+
+const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+
+function createStorage() {
+  const values = new Map();
+  return {
+    values,
+    getItem(key) { return values.has(key) ? values.get(key) : null; },
+    setItem(key, value) { values.set(key, String(value)); },
+    removeItem(key) { values.delete(key); }
+  };
+}
+
+function loadTelemetry({ online = false, fetchImpl } = {}) {
+  const localStorage = createStorage();
+  const sessionStorage = createStorage();
+  const windowListeners = new Map();
+  const documentListeners = new Map();
+  const window = {
+    crypto: webcrypto,
+    addEventListener(type, callback) {
+      const callbacks = windowListeners.get(type) || [];
+      callbacks.push(callback);
+      windowListeners.set(type, callbacks);
+    }
+  };
+  const document = {
+    hidden: false,
+    documentElement: { dataset: {} },
+    addEventListener(type, callback) {
+      const callbacks = documentListeners.get(type) || [];
+      callbacks.push(callback);
+      documentListeners.set(type, callbacks);
+    },
+    getElementById() { return null; }
+  };
+  class MutationObserver { observe() {} }
+  const navigator = { onLine: online, sendBeacon() { return false; } };
+  const context = {
+    window, document, navigator, localStorage, sessionStorage,
+    crypto: webcrypto, MutationObserver, Blob, Element: class Element {},
+    setTimeout() { return 1; }, clearTimeout() {}, setInterval() {},
+    fetch: fetchImpl || (async () => ({ ok: true, async json() { return { acknowledgedIds: [] }; } }))
+  };
+  return { context, localStorage, sessionStorage, window, windowListeners, documentListeners };
+}
+
+test('telemetry keeps anonymous events queued offline and clears them only after acknowledgement', async () => {
+  let failFirstRequest = true;
+  const requests = [];
+  const harness = loadTelemetry({
+    fetchImpl: async (_url, options) => {
+      requests.push(JSON.parse(options.body));
+      if (failFirstRequest) {
+        failFirstRequest = false;
+        throw new Error('temporary network failure');
+      }
+      return {
+        ok: true,
+        async json() { return { acknowledgedIds: requests.at(-1).events.map(event => event.eventId) }; }
+      };
+    }
+  });
+  vm.runInNewContext(await read('telemetry-client.js'), harness.context);
+  const telemetry = harness.window.stankquilizerTelemetry;
+  assert.ok(telemetry.getQueueSize() >= 2, 'startup events remain queued while offline');
+
+  telemetry.emit('feature_use', 'player', 'mute', { feature: 'mute' });
+  const queued = JSON.parse(harness.localStorage.getItem('sq_telemetry_queue_v1'));
+  assert.ok(queued.length >= 3);
+  assert.ok(queued.every(event => /^[a-f0-9]{32}$/i.test(event.eventId)));
+  assert.ok(queued.every(event => !('email' in event) && !('ip' in event) && !('userAgent' in event)));
+  assert.match(harness.localStorage.getItem('sq_telemetry_visitor_v1'), /^[a-f0-9]{32}$/i);
+
+  await telemetry.flush();
+  assert.equal(requests.length, 0, 'offline flush does not discard or send events');
+
+  harness.context.navigator.onLine = true;
+  await telemetry.flush();
+  assert.equal(telemetry.getQueueSize(), queued.length, 'failed request keeps the durable queue intact');
+  await telemetry.flush();
+  assert.equal(telemetry.getQueueSize(), 0, 'acknowledged event IDs are removed');
+  assert.deepEqual(JSON.parse(harness.localStorage.getItem('sq_telemetry_queue_v1')), []);
+});
+
+test('public site hardening remains additive and mobile-safe', async () => {
+  const html = await read('index.html');
+  assert.match(html, /<audio id="playerAudio" preload="none"><\/audio>/);
+  assert.match(html, /prefers-reduced-motion:\s*reduce/);
+  assert.match(html, /function runVisibleAnimation\(step\)/);
+  assert.match(html, /reducedMotionQuery\.addEventListener\?\.\("change"/);
+  assert.match(html, /barCount = window\.matchMedia\("\(max-width: 650px\)"\)\.matches \? 48 : 80/);
+  assert.match(html, /const MAX_PARTICLES = 200/);
+  assert.match(html, /aria-modal="true"/);
+  assert.match(html, /role="button" tabindex="0" aria-label="open fullscreen player"/);
+  assert.match(html, /transitionSequence/);
+  assert.match(html, /consecutivePlaybackErrors/);
+  assert.match(html, /Array\.from\(new Set\(raw\.albumsVisited/);
+  assert.match(html, /focusable = Array\.from\(fsPlayer\.querySelectorAll/);
+  assert.match(html, /getComputedStyle\(element\)\.visibility !== "hidden"/);
+  assert.match(html, /aria-labelledby","c5ResetTitle"/);
+  assert.match(html, /closeResetPanel=\(\)=>/);
+  assert.match(html, /knownTracks = new Set\(trackCatalog\.map/);
+  assert.match(html, /function runVisibleAnimation\(step\)/);
+  assert.match(html, /card\.addEventListener\("pointerenter", placeSpotlight\)/);
+  assert.match(html, /card\.addEventListener\("pointermove", placeSpotlight\)/);
+  assert.doesNotMatch(html, /card\.addEventListener\("mouseleave"[^\n]*(?:spotlight|Spotlight)/);
+
+  const messages = [...html.matchAll(/\{ when: "(always|first|returning|late-night|reset)", track: "([^"]+)", album: "([^"]+)" \}/g)];
+  assert.ok(messages.length >= 20, 'radio idle queue has at least twenty contextual messages');
+  assert.ok(messages.every(([, , track, album]) => track === track.toLowerCase() && album === album.toLowerCase()), 'radio messages stay lowercase');
+  for (const context of ['first', 'returning', 'late-night', 'reset']) assert.ok(messages.some(([, when]) => when === context), `${context} messages exist`);
+  assert.match(html, /13000 \+ Math\.random\(\) \* 5000/);
+  assert.match(html, /audio\.addEventListener\("play", \(\) => clearTimeout\(idleMessageTimer\)/);
+
+  const audioFiles = await readdir(new URL('../audio/', import.meta.url));
+  const referencedFiles = [...html.matchAll(/file:\s*"(audio\/[^\"]+\.mp3)"/g)].map(match => match[1]);
+  assert.equal(referencedFiles.length, 12, 'radio keeps all twelve catalog entries');
+  assert.equal(new Set(referencedFiles).size, referencedFiles.length, 'radio catalog has no duplicate audio paths');
+  for (const file of referencedFiles) assert.ok(audioFiles.includes(file.slice('audio/'.length)), `${file} exists`);
+
+  const dashboard = await read('observatory/public/index.html');
+  const featureIds = [...dashboard.matchAll(/\{id:'([a-z-]+)',name:/g)].map(match => match[1]);
+  assert.equal(featureIds.length, 21, 'Observatory feature matrix lists all Category 5 v2 features');
+  assert.equal(new Set(featureIds).size, 21, 'Category 5 feature IDs are unique');
+  const category6 = await read('category6.js');
+  assert.ok(html.includes('/category6.js'));
+  assert.match(html, /id="evoWhisper" aria-hidden="true" tabindex="-1"/);
+  assert.match(category6, /command === 'stats'/);
+  assert.match(category6, /command === 'specimen'/);
+  assert.match(category6, /command === 'knock'/);
+  assert.match(category6, /command === 'crt on'/);
+  assert.match(category6, /Math\.random\(\) < 0\.025/);
+  assert.doesNotMatch(category6, /\beval\s*\(/);
+  assert.doesNotMatch(category6, /fetch\s*\(/, 'public archive commands stay on-device');
+  assert.doesNotThrow(() => new vm.Script(category6, { filename: 'category6.js' }));
+  for (const feature of featureIds) assert.ok(html.includes(`emitFeature("${feature}"`), `public memory engine emits ${feature}`);
+});

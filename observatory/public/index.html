@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#090909">
-<title>stankquilizer — observatory</title>
+<title>stankquilizer - observatory</title>
 <style>
 :root{color-scheme:dark;--bg:#090909;--panel:#101010;--line:#242424;--muted:#777;--text:#e8e8e8;--soft:#aaa}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px}
@@ -42,13 +42,14 @@ main{padding:28px;max-width:1400px;width:100%}
 table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:10px 11px;border-bottom:1px solid #1d1d1d;text-align:left;font-size:9px;white-space:nowrap}th{color:#666;font-weight:400;text-transform:uppercase;font-size:8px}
 .rows{display:grid}.row{display:grid;grid-template-columns:90px minmax(0,1fr) 90px;gap:10px;padding:11px;border-bottom:1px solid #1c1c1c;font-size:9px}.row:last-child{border-bottom:0}.muted{color:#666}.ok{color:#aaa}
 .bars{height:120px;display:flex;align-items:end;gap:3px}.bar{flex:1;background:#777;min-width:2px;display:block}
-.feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.feature{border:1px solid var(--line);background:var(--panel);padding:12px}.feature-head{display:flex;justify-content:space-between;gap:8px}.feature-name{font-size:9px}.count{color:#666;font-size:8px}.state{font-size:8px;color:#666;margin-top:7px}.trace{height:2px;background:#242424;margin-top:9px}.trace i{display:block;height:100%;background:#777}
+.feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.feature{border:1px solid var(--line);background:var(--panel);padding:12px}.feature-head{display:flex;justify-content:space-between;gap:8px}.feature-name{font-size:9px}.count{color:#aaa;font-size:9px}.state{font-size:8px;color:#666;margin-top:7px;line-height:1.6}.feature-detail{font-size:8px;color:#999;line-height:1.6;margin-top:8px;min-height:26px}.trace{height:2px;background:#242424;margin-top:9px}.trace i{display:block;height:100%;background:#777}
 .controls{display:flex;flex-wrap:wrap;gap:7px}.controls input{flex:1 1 160px}
+.sandbox-command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:12px}.sandbox-command-grid .btn{min-height:42px;text-transform:lowercase}.sandbox-select{min-width:220px;background:#090909;color:#eee;border:1px solid #303030;padding:10px}.sandbox-warning{border-color:#493d2a;color:#b6a580;line-height:1.8}.sandbox-label{display:inline-block;color:#b6a580;border:1px solid #574b34;padding:3px 6px;font-size:8px;letter-spacing:.08em;text-transform:uppercase}.sandbox-session{border:1px solid #302a20;background:#100f0c;padding:15px}.sandbox-actions td{white-space:normal}
 pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-size:9px;margin:0}
 .mobilebar{display:none}.more-sheet{display:none}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#151515;border:1px solid #333;padding:9px 12px;color:#ddd;font-size:9px;z-index:20}
-@media(max-width:850px){.app{grid-template-columns:1fr}aside{display:none}main{padding:20px 15px 82px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mobilebar{display:flex;position:fixed;z-index:10;bottom:0;left:0;right:0;background:#0c0c0c;border-top:1px solid var(--line);padding:6px 5px env(safe-area-inset-bottom);gap:2px}.mobilebar button{flex:1;text-align:center;padding:9px 3px;font-size:8px}.more-sheet{position:fixed;inset:0;background:#000b;z-index:15;align-items:flex-end}.more-sheet.open{display:flex}.more-inner{background:#101010;border-top:1px solid #333;width:100%;max-height:75dvh;overflow:auto;padding:12px}.more-head{display:flex;justify-content:space-between;color:#666;padding:5px 3px 10px}.more-nav{display:grid}.more-nav button{width:100%;border-bottom:1px solid #1c1c1c}.two{grid-template-columns:1fr}.feature-grid{grid-template-columns:1fr}.top{display:block}.status{margin-top:10px}}
+@media(max-width:850px){.app{grid-template-columns:1fr}aside{display:none}main{padding:20px 15px 82px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mobilebar{display:flex;position:fixed;z-index:10;bottom:0;left:0;right:0;background:#0c0c0c;border-top:1px solid var(--line);padding:6px 5px env(safe-area-inset-bottom);gap:2px}.mobilebar button{flex:1;text-align:center;padding:9px 3px;font-size:8px}.more-sheet{position:fixed;inset:0;background:#000b;z-index:15;align-items:flex-end}.more-sheet.open{display:flex}.more-inner{background:#101010;border-top:1px solid #333;width:100%;max-height:75dvh;overflow:auto;padding:12px}.more-head{display:flex;justify-content:space-between;color:#666;padding:5px 3px 10px}.more-nav{display:grid}.more-nav button{width:100%;border-bottom:1px solid #1c1c1c}.two{grid-template-columns:1fr}.feature-grid{grid-template-columns:1fr}.sandbox-command-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sandbox-select{width:100%}.top{display:block}.status{margin-top:10px}}
 @media(max-width:420px){main{padding-left:10px;padding-right:10px}.grid{gap:6px}.card{padding:12px}.metric .value{font-size:19px}.login-box{padding:22px}.field{display:grid;grid-template-columns:1fr}.field .btn{width:100%}}
 </style>
 </head>
@@ -56,7 +57,7 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
 <section id="login" class="login">
   <div class="login-box">
     <div class="kicker">private system / access required</div>
-    <h1>stankquilizer — observatory</h1>
+    <h1>stankquilizer - observatory</h1>
     <p>the public site remembers visitors.<br>this place watches the machinery.</p>
     <form id="loginForm" class="field">
       <input id="password" type="password" placeholder="access phrase" autocomplete="current-password">
@@ -89,19 +90,36 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
 (() => {
   'use strict';
 
-  const NAV = ['overview','live','sessions','memory','player','radio','projects','rediscovery','journey','features','qa','events','deploy','privacy','system'];
+  const NAV = ['overview','live','sessions','memory','player','radio','projects','releases','rediscovery','journey','features','sandbox','qa','events','deploy','privacy','system'];
   const TRACKS = [
     'i get high',"i feel like you're the only one",'in the sunken place','zzz...',
     'the seraphim','fake gifted','stankquilizer type beat','unimagineable probability',
     'ignantamus','the chops','life of the loop','the earth i scar'
   ];
   const FEATURES = [
-    'Behavioral memory','Listener profile','Track & album affinity','Avoidance memory',
-    'Memory decay','Adaptive radio','Anti-personalization','Rediscovery','Session archetypes',
-    'Session temperature','Adaptive atmosphere','Memory-driven UI','Site state','Relationship age',
-    'Memory ghosts','Session milestones','Progressive unlocking','Discovery ledger',
-    'Memory corruption','Completion state','res(e)t'
+    {id:'behavioral-memory',name:'Behavioral memory',events:['memory_snapshot'],detail:'bounded session, listening, breadth, and milestone totals'},
+    {id:'listener-profile',name:'Listener profile',events:['site_state'],detail:'anonymous state derived from aggregate behavior'},
+    {id:'track-album-affinity',name:'Track & album affinity',events:['affinity_change'],detail:'coarse affinity changes after plays, completions, and release visits'},
+    {id:'avoidance-memory',name:'Avoidance memory',events:['avoidance_change'],detail:'skip response and bounded temperature band'},
+    {id:'memory-decay',name:'Memory decay',events:['decay'],detail:'elapsed days used to soften local preference weights'},
+    {id:'adaptive-radio',name:'Adaptive radio',events:[],detail:'personalized queue ordering was requested'},
+    {id:'exploration',name:'Anti-personalization / exploration',events:[],detail:'an exploration weight interrupted familiar ordering'},
+    {id:'rediscovery',name:'Rediscovery',events:['rediscovery'],detail:'a track returned after at least 14 days away'},
+    {id:'session-archetypes',name:'Session archetypes',events:['archetype_change'],detail:'coarse archetype transition, never a raw profile'},
+    {id:'session-temperature',name:'Session temperature',events:['temperature_change'],detail:'rounded temperature band changed'},
+    {id:'adaptive-atmosphere',name:'Adaptive atmosphere',events:[],detail:'memory state and temperature drive existing atmosphere'},
+    {id:'memory-driven-ui',name:'Memory-driven UI',events:[],detail:'memory state changed an existing interface behavior'},
+    {id:'site-state',name:'Site state',events:['site_state'],detail:'calm, active, restless, chaotic, or dormant transition'},
+    {id:'relationship-age',name:'Relationship age',events:[],detail:'first contact through old listener progression'},
+    {id:'memory-ghosts',name:'Memory ghosts',events:['memory_ghost'],detail:'subtle return or rediscovery echo'},
+    {id:'session-milestones',name:'Session milestones',events:['milestone'],detail:'new listening or discovery milestone'},
+    {id:'progressive-unlocking',name:'Progressive unlocking',events:['unlock'],detail:'a milestone unlocked a later memory state'},
+    {id:'discovery-ledger',name:'Discovery ledger',events:[],detail:'first-time discoveries were recorded locally'},
+    {id:'memory-corruption',name:'Presentation-only memory corruption',events:['memory_corruption'],detail:'brief text distortion; stored memory is unchanged'},
+    {id:'completion-state',name:'Completion state',events:['completion'],detail:'all required memory conditions were reached'},
+    {id:'reset-rebirth',name:'res(e)t / new lives / rebirth',events:['reset_action','rebirth'],detail:'soft reset, full reset, or new life was chosen'}
   ];
+  let sandboxSelectedId = '';
 
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c =>
@@ -147,13 +165,13 @@ pre{white-space:pre-wrap;word-break:break-word;color:#777;line-height:1.7;font-s
     const d = data || {};
     return head('overview','the whole system, without the mystery layer.') +
       `<div class="grid">
-        ${metric('sessions / 24h',d.sessions ?? '—','D1')}
-        ${metric('meaningful plays',d.meaningfulPlays ?? '—','D1')}
-        ${metric('completions',d.completions ?? '—','D1')}
-        ${metric('skips',d.skips ?? '—','D1')}
-        ${metric('events / 24h',d.events ?? '—','D1')}
-        ${metric('rediscoveries',d.rediscoveries ?? '—','D1')}
-        ${metric('radio sessions',d.radioSessions ?? '—','D1')}
+        ${metric('sessions / 24h',d.sessions ?? '-','D1')}
+        ${metric('meaningful plays',d.meaningfulPlays ?? '-','D1')}
+        ${metric('completions',d.completions ?? '-','D1')}
+        ${metric('skips',d.skips ?? '-','D1')}
+        ${metric('events / 24h',d.events ?? '-','D1')}
+        ${metric('rediscoveries',d.rediscoveries ?? '-','D1')}
+        ${metric('radio sessions',d.radioSessions ?? '-','D1')}
         ${metric('auth','ONLINE','server-side')}
       </div>
       <div class="two section">
@@ -205,9 +223,25 @@ only allowlisted events and bounded metadata</pre></div></div>`;
   function memory(data) {
     const counts = data?.counts || [];
     const rows = data?.recent || [];
+    const snapshot = data?.latestSnapshot || {};
+    const states = data?.states || [];
+    const detail = row => {
+      let meta = {};
+      try { meta = JSON.parse(row.meta_json || '{}'); } catch (_) {}
+      return [meta.feature,meta.reason,meta.memoryState,meta.relationship,meta.archetype,
+        meta.temperatureBucket == null ? '' : 'temperature ' + meta.temperatureBucket,
+        meta.decayDays == null ? '' : 'decay ' + meta.decayDays + 'd',
+        meta.milestone,meta.completed ? 'complete' : ''].filter(Boolean).join(' · ');
+    };
     return head('memory laboratory','aggregate behavior memory; raw visitor memory remains local.') +
-      `<div class="grid">${metric('snapshots',countType(counts,'memory_snapshot'),'30 days')}${metric('site-state changes',countType(counts,'site_state'),'30 days')}${metric('affinity shifts',countType(counts,'affinity_change'),'30 days')}${metric('decay events',countType(counts,'decay'),'30 days')}${metric('rediscoveries',countType(counts,'rediscovery'),'30 days')}${metric('avoidance changes',countType(counts,'avoidance_change'),'30 days')}${metric('memory ghosts',countType(counts,'memory_ghost'),'30 days')}${metric('resets / rebirths',countType(counts,'reset_action')+countType(counts,'rebirth'),'30 days')}</div>
-      <div class="section"><div class="section-title">recent memory and journey events</div>${eventTable(rows,'no memory events yet')}</div>
+      `<div class="grid">${metric('snapshots',countType(counts,'memory_snapshot'),'30 days')}${metric('latest state',snapshot.memoryState || 'not observed',snapshot.relationship || 'relationship unknown')}${metric('temperature',snapshot.temperatureBucket == null ? 'not observed' : snapshot.temperatureBucket,'latest bounded band')}${metric('local breadth',`${snapshot.trackCount || 0} tracks / ${snapshot.albumCount || 0} releases`,'latest snapshot')}${metric('listening time',snapshot.listeningMinutes || 0,'minutes in latest snapshot')}${metric('milestones',snapshot.milestoneCount || 0,'latest snapshot')}${metric('generation / resets',`${snapshot.generation || 1} / ${snapshot.resetCount || 0}`,'latest snapshot')}${metric('completion',snapshot.completed ? 'complete' : 'in progress','latest snapshot')}${metric('site-state changes',countType(counts,'site_state'),'30 days')}${metric('affinity shifts',countType(counts,'affinity_change'),'30 days')}${metric('decay events',countType(counts,'decay'),'30 days')}${metric('rediscoveries',countType(counts,'rediscovery'),'30 days')}${metric('avoidance changes',countType(counts,'avoidance_change'),'30 days')}${metric('memory ghosts',countType(counts,'memory_ghost'),'30 days')}${metric('resets / rebirths',countType(counts,'reset_action')+countType(counts,'rebirth'),'30 days')}</div>
+      <div class="section"><div class="section-title">state transitions · 30 days</div><div class="table-wrap"><table><thead><tr><th>state</th><th>transitions</th><th>last observed</th></tr></thead><tbody>${states.length ? states.map(row=>`<tr><td>${esc(row.subject)}</td><td>${esc(row.count)}</td><td>${new Date(row.last_seen).toLocaleString()}</td></tr>`).join('') : '<tr><td colspan="3">no state transitions yet</td></tr>'}</tbody></table></div></div>
+      <div class="section"><div class="section-title">recent memory and journey events</div><div class="table-wrap"><table><thead><tr><th>time</th><th>session</th><th>event</th><th>subject</th><th>bounded detail</th></tr></thead><tbody>${rows.length ? rows.map(row=>`<tr><td>${new Date(row.ts).toLocaleString()}</td><td>${esc(row.session_id)}</td><td>${esc(row.type)}</td><td>${esc(row.subject)}</td><td>${esc(detail(row)) || 'no additional detail'}</td></tr>`).join('') : '<tr><td colspan="5">no memory events yet</td></tr>'}</tbody></table></div></div>
+      <div class="section"><div class="section-title">latest anonymous snapshot</div><div class="card"><pre>${snapshot.capturedAt ? 'captured ' + esc(new Date(snapshot.capturedAt).toLocaleString()) : 'no snapshot received'}
+profile fields: sessions, tracks heard, releases visited, listening minutes
+state: ${esc(snapshot.memoryState || 'unknown')} · relationship: ${esc(snapshot.relationship || 'unknown')}
+temperature band: ${esc(snapshot.temperatureBucket ?? 'unknown')} · generation: ${esc(snapshot.generation || 1)}
+completion: ${snapshot.completed ? 'yes' : 'no'} · raw track and album history stays local</pre></div></div>
       <div class="section"><div class="section-title">privacy boundary</div><div class="card"><pre>OBSERVATORY: event counts and bounded state summaries
 PUBLIC SITE: visitor-facing memory profile
 RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
@@ -256,19 +290,88 @@ RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
     const tracks = data?.tracks || [];
     const rows = data?.recent || [];
     return head('rediscovery ledger','tracks encountered again after a long absence; no raw listener profile is exposed.') +
-      `<div class="grid">${metric('rediscovery events',data?.total || 0,`${data?.days || 30} days`)}${metric('tracks rediscovered',tracks.length,'top 100 tracks')}${metric('most returned',tracks[0]?.subject || '—','track')}${metric('days covered',data?.days || 30,'maximum 90')}</div>
+      `<div class="grid">${metric('rediscovery events',data?.total || 0,`${data?.days || 30} days`)}${metric('tracks rediscovered',tracks.length,'top 100 tracks')}${metric('most returned',tracks[0]?.subject || '-','track')}${metric('days covered',data?.days || 30,'maximum 90')}</div>
       <div class="section"><div class="section-title">tracks with rediscovery events</div><div class="table-wrap"><table><thead><tr><th>track</th><th>rediscoveries</th><th>most recent</th></tr></thead><tbody>${
         tracks.length ? tracks.map(row=>`<tr><td>${esc(row.subject)}</td><td>${esc(row.count)}</td><td>${new Date(row.last_seen).toLocaleString()}</td></tr>`).join('') : '<tr><td colspan="3">no rediscoveries yet</td></tr>'
       }</tbody></table></div></div>
       <div class="section"><div class="section-title">recent events</div>${eventTable(rows,'no rediscovery events yet')}</div>`;
   }
 
+  function sandbox(data) {
+    const sessions = data?.sessions || [];
+    const recent = data?.events || [];
+    const selected = sessions.find(session => session.id === sandboxSelectedId) || sessions[0] || null;
+    sandboxSelectedId = selected?.id || '';
+    const commandSpecs = [
+      ['play','next transmission'],['skip','skip track'],['replay','replay track'],['haunt','memory ghost'],
+      ['glitch','presentation glitch'],['heat','raise temperature'],['cooldown','cool down'],['rediscover','rediscovery'],
+      ['milestone','milestone'],['complete','complete journey'],['storm','event storm x20'],['reset','reset synthetic memory'],['rebirth','new generation'],
+      ['toggle_terminal','toggle terminal'],['toggle_do_not_click','toggle do not click'],['toggle_specimen','toggle specimen'],['toggle_archive','toggle archive unlock'],['toggle_mutation','toggle rare mutation'],['toggle_crt','toggle crt mode']
+    ];
+    let options = '';
+    sessions.forEach(session => {
+      options += '<option value="' + esc(session.id) + '"' + (session.id === sandboxSelectedId ? ' selected' : '') + '>' +
+        esc(session.label) + ' · ' + esc(session.state) + ' · ' + esc(session.track) + '</option>';
+    });
+    if (!sessions.length) options = '<option value="">no simulated listeners yet</option>';
+    const commandButtons = commandSpecs.map(([command,label]) =>
+      '<button class="btn" data-sandbox-command="' + command + '"' + (selected ? '' : ' disabled') + '>' + label + '</button>'
+    ).join('');
+    let profile = '<div class="card muted">no simulated listener exists. spawn one to start the control room.</div>';
+    if (selected) {
+      profile = '<div class="grid">' +
+        '<div class="card sandbox-session"><div class="label">synthetic identity</div><div class="value">' + esc(selected.label) + '</div><div class="sub">sandbox only</div></div>' +
+        metric('current track',selected.track,'simulated') +
+        metric('state / generation',selected.state + ' / ' + selected.generation,'synthetic profile') +
+        metric('temperature',selected.temperature,'bounded 0-100') + '</div>' +
+        '<div class="grid section">' +
+        metric('plays / skips',selected.plays + ' / ' + selected.skips,'simulated') +
+        metric('ghosts / glitches',selected.ghosts + ' / ' + selected.glitches,'simulated') +
+        metric('rediscoveries / milestones',selected.rediscoveries + ' / ' + selected.milestones,'simulated') +
+        metric('rebirths / resets',selected.rebirths + ' / ' + selected.resets,'synthetic only') + '</div>';
+    }
+    const eventRows = recent.length ? recent.map(row => {
+      const session = sessions.find(item => item.id === row.session_id);
+      return '<tr><td>' + new Date(row.ts).toLocaleString() + '</td><td>' +
+        esc(session?.label || String(row.session_id || '').slice(0,10)) + '</td><td>' +
+        esc(row.command) + '</td><td>' + esc(row.detail) + '</td></tr>';
+    }).join('') : '<tr><td colspan="4">the tape is quiet</td></tr>';
+    return head('sandbox control room','synthetic listeners for testing and play. production visitors cannot be targeted.') +
+      '<div class="card sandbox-warning"><span class="sandbox-label">isolated simulation</span><p>every control below writes only to sandbox tables. these sessions never enter real live activity, visitor stats, or telemetry, and no command is sent to a listener’s browser.</p></div>' +
+      '<div class="section"><div class="section-title">test room</div><div class="card"><div class="controls">' +
+      '<button class="btn" data-sandbox-action="spawn">spawn listener</button><button class="btn" data-sandbox-action="crowd">spawn five</button><button class="btn" data-sandbox-action="clear">clear sandbox</button>' +
+      '<select class="sandbox-select" id="sandboxSession" aria-label="select synthetic listener">' + options + '</select></div>' +
+      '<div class="sandbox-command-grid">' + commandButtons + '</div></div></div>' +
+      '<div class="section"><div class="section-title">selected simulation</div>' + profile + '</div>' +
+      '<div class="section"><div class="section-title">sandbox event tape · ' + recent.length + ' recent synthetic actions</div><div class="table-wrap"><table class="sandbox-actions"><thead><tr><th>time</th><th>synthetic id</th><th>command</th><th>result</th></tr></thead><tbody>' + eventRows + '</tbody></table></div></div>' +
+      '<div class="section"><div class="card"><pre>limits: 12 synthetic listeners · 2,500 retained test actions\nevent storm: 20 synthetic rows per command\nclear sandbox removes only sandbox sessions and actions</pre></div></div>';
+  }
+
+  function releaseManager(items) {
+    const forms=(items||[]).map(item=>{const artists=JSON.parse(item.featured_artists_json||'[]'),credits=JSON.parse(item.credits_json||'[]'),badges=JSON.parse(item.badges_json||'[]'),features=JSON.parse(item.features_json||'{}');const checks=['shuffle_enabled','keyboard_enabled','portal_enabled','glitch_enabled','memory_enabled','artwork_reveal_enabled','cursor_tint_enabled','vhs_enabled'];return '<details class="section card" id="edit-'+esc(item.id)+'"><summary>'+esc(item.title)+' / edit release and card</summary><form class="releaseEdit controls" data-id="'+esc(item.id)+'"><input name="title" value="'+esc(item.title)+'" required placeholder="title"><input name="slug" value="'+esc(item.slug)+'" required placeholder="slug"><select name="releaseType" class="sandbox-select">'+['album','ep','single','other'].map(t=>'<option'+(t===item.release_type?' selected':'')+'>'+t+'</option>').join('')+'</select><select name="template" class="sandbox-select">'+['standard','featured','upcoming','mystery','ep','single'].map(t=>'<option'+(t===item.template?' selected':'')+'>'+t+'</option>').join('')+'</select><input name="releaseDate" type="date" value="'+esc(item.release_date)+'"><input name="releaseYear" type="number" value="'+esc(item.release_year||'')+'" placeholder="year"><input name="genres" value="'+esc(JSON.parse(item.genres_json||'[]').join(', '))+'" placeholder="genres, comma separated"><input name="accent" type="color" value="'+esc(item.accent||'#777777')+'"><input name="producer" value="'+esc(item.producer||'')+'" placeholder="producer"><input name="featuredArtists" value="'+esc(artists.join(', '))+'" placeholder="featured artists"><input name="credits" value="'+esc((Array.isArray(credits)?credits:Object.entries(credits).map(x=>x.join(': '))).join(', '))+'" placeholder="credits"><input name="badges" value="'+esc(badges.join(', '))+'" placeholder="badges"><input name="label" value="'+esc(item.label||'')+'" placeholder="label"><input name="catalogueNumber" value="'+esc(item.catalogue_number||'')+'" placeholder="catalogue number"><input name="displayOrder" type="number" value="'+esc(item.display_order)+'" placeholder="display order"><input name="trackCountOverride" type="number" min="0" max="500" value="'+esc(item.track_count_override??'')+'" placeholder="track count override (blank = automatic)"><input name="runtimeOverride" type="number" min="0" value="'+esc(item.runtime_override??'')+'" placeholder="runtime override in ms (blank = automatic)"><input name="artworkUrl" value="'+esc(item.artwork_url||'')+'" placeholder="GitHub raw artwork URL"><input name="untitledUrl" value="'+esc(item.untitled_url||'')+'" placeholder="Untitled project link"><select name="destination" class="sandbox-select"><option value="untitled"'+(item.destination!=='native'?' selected':'')+'>Untitled link</option><option value="native"'+(item.destination==='native'?' selected':'')+'>native (when media is ready)</option></select><textarea name="description" placeholder="description">'+esc(item.description||'')+'</textarea><label><input name="featured" type="checkbox"'+(item.featured?' checked':'')+'> featured card</label><fieldset><legend>album feature compatibility</legend>'+checks.map(key=>'<label><input type="checkbox" name="'+key+'"'+(features[key]!==false?' checked':'')+'> '+key.replaceAll('_',' ')+'</label>').join('')+'</fieldset><button class="btn">save changes</button></form><p class="muted">Artwork: upload the image to the stankquilizer GitHub repository, then paste its raw image URL here. Prefer main so the link survives branch cleanup. Album tracks remain isolated from the radio system. Album link remains on Untitled until native audio and R2 are ready.</p>'+(item.artwork_url?'<img src="'+esc(item.artwork_url)+'" alt="artwork preview" style="width:120px;height:120px;object-fit:cover;margin-top:10px">':'')+'</details>';}).join('');
+    return head('release manager','manage public album cards. Untitled stays the destination until native audio is ready.') +
+      '<div class="section card"><div class="label">cover artwork</div><p class="muted">Upload cover files to the GitHub repository, then paste the image raw URL in a release editor. Use the main branch so artwork URLs remain stable.</p><a class="btn" href="https://github.com/stankquilizer/stankquilizer/upload/main/album-art" target="_blank" rel="noopener noreferrer">upload artwork to GitHub</a></div>'+
+      '<div class="card"><form id="releaseCreate" class="controls"><input name="title" required maxlength="120" placeholder="release title"><select name="releaseType" class="sandbox-select"><option value="album">album</option><option value="ep">ep</option><option value="single">single</option><option value="other">other</option></select><input name="releaseDate" type="date"><input name="genres" placeholder="genres, comma separated"><button class="btn">create draft</button></form></div>'+
+      '<div class="section"><div class="table-wrap"><table><thead><tr><th>release</th><th>type</th><th>destination</th><th>tracks</th><th>status</th><th>actions</th></tr></thead><tbody>'+
+      (items||[]).map(item=>'<tr><td>'+esc(item.title)+'</td><td>'+esc(item.release_type)+'</td><td>'+esc(item.destination)+'</td><td>'+esc(item.track_count_override??0)+'</td><td>'+ (item.archived_at?'archived':item.published?'published':'draft')+'</td><td><button class="btn" data-release-edit="'+esc(item.id)+'">edit</button> '+(!item.published?'<button class="btn" data-release-action="publish" data-id="'+esc(item.id)+'">publish</button>':'<button class="btn" data-release-action="archive" data-id="'+esc(item.id)+'">archive</button>')+'</td></tr>').join('')+'</tbody></table></div></div>'+forms+
+      '<div class="section card"><div class="label">media status</div><p class="muted">R2 is not enabled for this Cloudflare account yet. Current releases remain on Untitled. Track uploads, native playback, and downloads will activate after the bucket is provisioned.</p></div>';
+  }
+
   function features(data) {
     const counts = new Map();
     for (const row of data?.counts || []) counts.set(row.type,(counts.get(row.type)||0)+(Number(row.count)||0));
+    const featureCounts = new Map((data?.features || []).map(row=>[row.feature,row]));
     return head('feature matrix','the 21-feature Category 5 system plus the observatory foundation.') +
       `<div class="feature-grid">${
-        FEATURES.map((f,i)=>{const eventType=['memory_snapshot','site_state','affinity_change','avoidance_change','decay','radio_play','track_started','track_skipped','rediscovery','session_evolution','temperature_change','site_state','site_state','site_state','memory_ghost','milestone','unlock','milestone','memory_corruption','completion','reset_action'][i];const count=counts.get(eventType)||0;const width=Math.min(100,Math.max(4,count?20+Math.log2(count+1)*12:4));return `<div class="feature"><div class="feature-head"><span class="feature-name">${String(i+1).padStart(2,'0')} · ${esc(f)}</span><span class="count">${count}</span></div><div class="state">${esc(eventType)} · 30 days</div><div class="trace"><i style="width:${width}%"></i></div></div>`}).join('')
+        FEATURES.map((feature,i)=>{
+          const explicit = featureCounts.get(feature.id);
+          const legacyCount = feature.events.reduce((sum,type)=>sum+(counts.get(type)||0),0);
+          const count = Number(explicit?.count ?? legacyCount) || 0;
+          const signal = explicit ? 'feature_use' : feature.events.join(' + ') || 'waiting for first observation';
+          const lastSeen = explicit?.last_seen ? 'last ' + new Date(explicit.last_seen).toLocaleString() : count ? 'observed in the selected range' : 'awaiting trigger';
+          const width = Math.min(100,Math.max(4,count?20+Math.log2(count+1)*12:4));
+          return `<div class="feature"><div class="feature-head"><span class="feature-name">${String(i+1).padStart(2,'0')} · ${esc(feature.name)}</span><span class="count">${count}</span></div><div class="state">${esc(signal)} · ${esc(lastSeen)}</div><div class="feature-detail">${esc(feature.detail)}</div><div class="trace"><i style="width:${width}%"></i></div></div>`;
+        }).join('')
       }</div>`;
   }
 
@@ -278,7 +381,7 @@ RAW TRACK / ALBUM MEMORY: never uploaded</pre></div></div>`;
         ['session_start','track_started','meaningful_play','track_completed','track_skipped','album_entered','rediscovery','milestone','unlock','completion','soft-reset','full-reset','rebirth'].map(s=>`<button class="btn" data-qa="${esc(s)}">${esc(s)}</button>`).join('')
       }</div></div>
       <div class="section"><div class="section-title">recent synthetic probes</div><div class="table-wrap"><table><thead><tr><th>time</th><th>scenario</th><th>synthetic</th><th>session</th></tr></thead><tbody>${
-        recent.length ? recent.map(row=>{let meta={};try{meta=JSON.parse(row.meta_json||'{}')}catch(_){}return `<tr><td>${new Date(row.ts).toLocaleString()}</td><td>${esc(row.subject)}</td><td>${meta.synthetic?'yes':'—'}</td><td>${esc(row.session_id)}</td></tr>`}).join('') : '<tr><td colspan="4">no QA probes yet</td></tr>'
+        recent.length ? recent.map(row=>{let meta={};try{meta=JSON.parse(row.meta_json||'{}')}catch(_){}return `<tr><td>${new Date(row.ts).toLocaleString()}</td><td>${esc(row.subject)}</td><td>${meta.synthetic?'yes':'-'}</td><td>${esc(row.session_id)}</td></tr>`}).join('') : '<tr><td colspan="4">no QA probes yet</td></tr>'
       }</tbody></table></div></div>
       <div class="section"><div class="section-title">test contract</div><div class="card"><pre>QA probes use isolated random session IDs.
 Synthetic metadata is stored in meta_json.
@@ -345,10 +448,12 @@ mobile navigation is self-contained</pre></div></div></div>`;
     else if(page==='player') { let d=null; try { d=await api('/radio'); } catch(e) {} html=player(d); }
     else if(page==='radio') { let d=null; try { d=await api('/radio'); } catch(e) {} html=radio(d); }
     else if(page==='projects') { let d=null; try { d=await api('/projects'); } catch(e) {} html=projects(d); }
+    else if(page==='releases') { let d=[]; try { d=await api('/releases'); } catch(e) {} html=releaseManager(d); }
     else if(page==='rediscovery') { let d=null; try { d=await api('/rediscoveries'); } catch(e) {} html=rediscoveries(d); }
     else if(page==='journey') { let d=null; try { d=await api('/memory'); } catch(e) {} html=journey(d); }
     else if(page==='features') { let d=null; try { d=await api('/feature-counts'); } catch(e) {} html=features(d); }
     else if(page==='qa') { let d=[]; try { d=await api('/qa?limit=50'); } catch(e) {} html=qa(d); }
+    else if(page==='sandbox') { let d=null; try { d=await api('/sandbox'); } catch(e) {} html=sandbox(d); }
     else if(page==='events'){
       let d=[]; try { d=await api('/events?limit=100'); } catch(e) {}
       html=events(d);
@@ -375,6 +480,36 @@ mobile navigation is self-contained</pre></div></div></div>`;
   }
 
   function wirePage(page) {
+    if(page==='releases'){
+      document.querySelectorAll('[data-release-edit]').forEach(button=>button.addEventListener('click',()=>{const details=document.getElementById('edit-'+button.dataset.releaseEdit);if(details){details.open=true;details.scrollIntoView({behavior:'smooth',block:'start'});}}));
+      document.querySelectorAll('.releaseEdit').forEach(form=>form.addEventListener('submit',async event=>{event.preventDefault();const f=new FormData(form);try{await api('/releases/'+encodeURIComponent(form.dataset.id),{method:'PUT',body:JSON.stringify({title:f.get('title'),slug:f.get('slug'),releaseType:f.get('releaseType'),template:f.get('template'),releaseDate:f.get('releaseDate'),releaseYear:f.get('releaseYear'),genres:String(f.get('genres')||'').split(','),accent:f.get('accent'),producer:f.get('producer'),featuredArtists:String(f.get('featuredArtists')||'').split(','),credits:String(f.get('credits')||'').split(','),badges:String(f.get('badges')||'').split(','),label:f.get('label'),catalogueNumber:f.get('catalogueNumber'),displayOrder:f.get('displayOrder'),trackCountOverride:f.get('trackCountOverride'),runtimeOverride:f.get('runtimeOverride'),artworkUrl:f.get('artworkUrl'),untitledUrl:f.get('untitledUrl'),destination:f.get('destination'),description:f.get('description'),featured:form.elements.featured.checked,features:Object.fromEntries(['shuffle_enabled','keyboard_enabled','portal_enabled','glitch_enabled','memory_enabled','artwork_reveal_enabled','cursor_tint_enabled','vhs_enabled'].map(key=>[key,form.elements[key].checked]))})});toast('release saved');await loadPage('releases');}catch(error){toast(error.message==='HTTP_400'?'check the artwork URL and release fields':'release update failed');}}));
+      $('releaseCreate')?.addEventListener('submit',async event=>{event.preventDefault();const form=new FormData(event.currentTarget);try{await api('/releases',{method:'POST',body:JSON.stringify({title:form.get('title'),releaseType:form.get('releaseType'),releaseDate:form.get('releaseDate'),genres:String(form.get('genres')||'').split(',')})});toast('draft release created');await loadPage('releases');}catch(_){toast('release could not be created');}});
+      document.querySelectorAll('[data-release-action]').forEach(button=>button.addEventListener('click',async()=>{try{await api('/releases/'+encodeURIComponent(button.dataset.id)+'/'+button.dataset.releaseAction,{method:'POST'});toast('release updated');await loadPage('releases');}catch(_){toast('release update failed');}}));
+    }
+    if(page==='sandbox'){
+      $('sandboxSession')?.addEventListener('change',event=>{sandboxSelectedId=event.target.value;loadPage('sandbox');});
+      document.querySelectorAll('[data-sandbox-action]').forEach(button=>button.addEventListener('click',async()=>{
+        const action=button.dataset.sandboxAction;
+        if(action==='clear'&&!confirm('clear only sandbox simulations and their synthetic action tape?'))return;
+        try {
+          const result=await api('/sandbox',{method:'POST',body:JSON.stringify({action})});
+          if(result.sessionIds?.length)sandboxSelectedId=result.sessionIds[0];
+          if(action==='clear')sandboxSelectedId='';
+          toast(action==='clear'?'sandbox cleared':(result.created||1)+' synthetic listener(s) ready');
+          await loadPage('sandbox');
+        } catch(error) { toast(error.message==='HTTP_409'?'sandbox listener limit reached':'sandbox action failed'); }
+      }));
+      document.querySelectorAll('[data-sandbox-command]').forEach(button=>button.addEventListener('click',async()=>{
+        sandboxSelectedId=$('sandboxSession')?.value||sandboxSelectedId;
+        if(!sandboxSelectedId)return;
+        button.disabled=true;
+        try {
+          const result=await api('/sandbox',{method:'POST',body:JSON.stringify({action:'command',sessionId:sandboxSelectedId,command:button.dataset.sandboxCommand})});
+          toast(result.detail||'simulation updated');
+          await loadPage('sandbox');
+        } catch(error) { toast(error.message==='HTTP_429'?'sandbox rate limit reached; wait a moment':'sandbox command failed'); await loadPage('sandbox'); }
+      }));
+    }
     if(page==='qa'){
       document.querySelectorAll('[data-qa]').forEach(btn=>btn.addEventListener('click',async()=>{
         try { await api('/qa',{method:'POST',body:JSON.stringify({scenario:btn.dataset.qa})}); toast('QA emitted: '+btn.dataset.qa); }
@@ -428,7 +563,7 @@ mobile navigation is self-contained</pre></div></div></div>`;
       installNav();
       await loadPage(location.hash.slice(1) || 'overview');
     } catch(e) {
-      $('loginError').textContent='connection error — try again';
+      $('loginError').textContent='connection error - try again';
     }
   }
 

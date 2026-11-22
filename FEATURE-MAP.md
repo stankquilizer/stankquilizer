@@ -1,4 +1,4 @@
-# stankquilizer — observatory feature map
+# stankquilizer - observatory feature map
 
 The observatory is an external control/observability surface. It does not replace public-site behavior.
 
@@ -110,8 +110,8 @@ Explicitly report what the telemetry pipeline is accepting/rejecting: IP absent,
 
 The observatory should be able to answer three questions for every feature:
 
-1. **Is it alive?** — has it triggered recently?
-2. **Is it behaving correctly?** — are expected events and transitions occurring?
-3. **What did it change?** — which public-site surface reacted?
+1. **Is it alive?** - has it triggered recently?
+2. **Is it behaving correctly?** - are expected events and transitions occurring?
+3. **What did it change?** - which public-site surface reacted?
 
 That makes the observatory a real control room rather than a generic analytics page.

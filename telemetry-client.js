@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const endpoint = String(window.STANKQUILIZER_TELEMETRY_ENDPOINT || 'https://telemetry.stankquilizer.workers.dev/collect');
+  const endpoint = String(window.STANKQUILIZER_TELEMETRY_ENDPOINT || 'https://stankquilizer-telemetry.stankquilizer.workers.dev/collect');
   const build = String(window.STANKQUILIZER_BUILD || 'unknown').slice(0, 60);
   const visitorKeyName = 'sq_telemetry_visitor_v1';
   const sessionKeyName = 'sq_telemetry_session_v1';
@@ -318,6 +318,15 @@
     if (typeof detail.type !== 'string') return;
     emit(detail.type, detail.surface || 'memory', detail.subject || '', detail.meta || {});
   });
+  window.__stankquilizerTelemetryReady = true;
+  const pendingMemoryEvents = window.__stankquilizerPendingTelemetry;
+  if (Array.isArray(pendingMemoryEvents)) {
+    pendingMemoryEvents.splice(0).forEach(detail => {
+      if (detail && typeof detail.type === 'string') {
+        emit(detail.type, detail.surface || 'memory', detail.subject || '', detail.meta || {});
+      }
+    });
+  }
 
   let hiddenSent = false;
   document.addEventListener('visibilitychange', () => {

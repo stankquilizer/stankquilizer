@@ -25,6 +25,13 @@ const META_FIELDS = new Set([
   'completed', 'visible', 'volumeBucket', 'build'
 ]);
 const META_TEXT_FIELDS = new Set(['reason', 'source', 'memoryState', 'relationship', 'archetype', 'radioMode', 'feature', 'milestone', 'build']);
+const MEMORY_FEATURE_IDS = new Set([
+  'behavioral-memory', 'listener-profile', 'track-album-affinity', 'avoidance-memory', 'memory-decay',
+  'adaptive-radio', 'exploration', 'rediscovery', 'session-archetypes', 'session-temperature',
+  'adaptive-atmosphere', 'memory-driven-ui', 'site-state', 'relationship-age', 'memory-ghosts',
+  'session-milestones', 'progressive-unlocking', 'discovery-ledger', 'memory-corruption',
+  'completion-state', 'reset-rebirth'
+]);
 
 const allowedOrigins = env => new Set(
   String(env.TELEMETRY_ALLOWED_ORIGINS || DEFAULT_PUBLIC_ORIGIN)
@@ -82,6 +89,7 @@ function validateEvent(input, now) {
   const subject = cleanText(input.subject || '', 100);
   const meta = validateMeta(input.meta);
   if (!meta) return null;
+  if (meta.feature && !MEMORY_FEATURE_IDS.has(meta.feature)) return null;
   const metaJson = JSON.stringify(meta);
   if (metaJson.length > 1600) return null;
   const build = cleanText(input.build || 'unknown', 60).replace(/[^a-zA-Z0-9._+-]/g, '').slice(0, 60) || 'unknown';
@@ -125,9 +133,6 @@ export default {
       statements.push(env.DB.prepare(
         'INSERT INTO telemetry_dedupe(event_id,session_id,accepted_at) VALUES(?,?,?) ON CONFLICT(event_id) DO NOTHING'
       ).bind(event.eventId, event.sessionId, now));
-      statements.push(env.DB.prepare(
-        'INSERT INTO events(session_id,ts,type,surface,subject,meta_json) SELECT ?,?,?,?,?,? WHERE changes()=1'
-      ).bind(event.sessionId, event.ts, event.type, event.surface, event.subject, event.metaJson));
       statements.push(env.DB.prepare(`
         INSERT INTO sessions(id,visitor_key,started_at,last_seen,build,event_count)
         SELECT ?,?,?,?,?,1 WHERE changes()=1
@@ -138,6 +143,9 @@ export default {
           build=excluded.build,
           event_count=sessions.event_count+1
       `).bind(event.sessionId, event.visitorKey, event.ts, event.ts, event.build));
+      statements.push(env.DB.prepare(
+        'INSERT INTO events(session_id,ts,type,surface,subject,meta_json) SELECT ?,?,?,?,?,? WHERE changes()=1'
+      ).bind(event.sessionId, event.ts, event.type, event.surface, event.subject, event.metaJson));
     }
 
     try {

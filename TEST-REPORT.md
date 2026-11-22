@@ -1,4 +1,4 @@
-# Strict test report — final observatory package
+# Strict test report - final observatory package
 
 ## Static / syntax
 

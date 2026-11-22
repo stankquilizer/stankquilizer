@@ -1,10 +1,10 @@
-# Launch guide — phone-first
+# Launch guide - phone-first
 
 This launches three Workers while preserving the existing public site:
 
-1. `stankquilizer` — your existing public Worker
-2. `stankquilizer-telemetry` — anonymous write-only collector
-3. `stankquilizer-observatory` — private owner dashboard
+1. `stankquilizer` - your existing public Worker
+2. `stankquilizer-telemetry` - anonymous write-only collector
+3. `stankquilizer-observatory` - private owner dashboard
 
 ## 0. Back up the live site
 

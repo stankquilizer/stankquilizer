@@ -9,18 +9,18 @@
           document.documentElement.setAttribute("data-theme", "light");
         }
       } catch (e) {
-        /* private mode / storage disabled — falls back to dark, the default */
+        /* private mode / storage disabled - falls back to dark, the default */
       }
     })();
 
 
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Stankquilizer — music, albums, and releases.">
-  <title>Stankquilizer — Music</title>
+  <meta name="description" content="Stankquilizer - music, albums, and releases.">
+  <title>Stankquilizer - Music</title>
 
   <meta property="og:title" content="stankquilizer">
-  <meta property="og:description" content="Stankquilizer — music, albums, and releases.">
+  <meta property="og:description" content="Stankquilizer - music, albums, and releases.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -115,10 +115,10 @@
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
-    /* time-of-day mood — a very faint color wash set by JS based on local hour.
+    /* time-of-day mood - a very faint color wash set by JS based on local hour.
        kept deliberately low-opacity year-round so daytime never gets a bright
        wash; only the hue and a slightly higher opacity change at night.
-       NOTE: uses "screen" blending, not "overlay" — overlay/hard-light blend
+       NOTE: uses "screen" blending, not "overlay" - overlay/hard-light blend
        modes barely affect a near-black base color like ours, so the mood
        wash was invisible before. "screen" actually shows against dark bg. */
     .mood-overlay {
@@ -136,14 +136,14 @@
       .mood-overlay { transition: none; }
     }
 
-    /* "screen" blending only works against a dark base — on light mode's
+    /* "screen" blending only works against a dark base - on light mode's
        near-white background it would be invisible anyway, so it's switched
        off entirely rather than left running for no visible effect */
     :root[data-theme="light"] .mood-overlay {
       display: none;
     }
 
-    /* light/dark theme toggle — top-right, clear of every other fixed
+    /* light/dark theme toggle - top-right, clear of every other fixed
        control (back-to-top and the player live at the bottom) */
     .theme-toggle {
       position: fixed;
@@ -215,7 +215,7 @@
       );
     }
 
-    /* very slow, atmospheric particle layer behind the whole page — sits
+    /* very slow, atmospheric particle layer behind the whole page - sits
        beneath even the plain background, gently pulses with the music */
     #audioBg {
       position: fixed;
@@ -296,7 +296,7 @@
       outline-offset: 3px;
     }
 
-    /* custom cursor — only ever shown on fine-pointer devices once JS confirms it's tracking */
+    /* custom cursor - only ever shown on fine-pointer devices once JS confirms it's tracking */
     body.custom-cursor-active,
     body.custom-cursor-active a,
     body.custom-cursor-active button {
@@ -327,14 +327,14 @@
       height: 32px;
     }
 
-    /* trailing "ghost" ring — sits behind the main cursor, stays invisible
+    /* trailing "ghost" ring - sits behind the main cursor, stays invisible
        until music is playing, then fades in and pulses gently with the bass */
     .custom-cursor-ghost {
       z-index: 9599;
       transition: opacity .2s ease;
     }
 
-    /* back-to-top — sits just above the persistent player bar so they never collide */
+    /* back-to-top - sits just above the persistent player bar so they never collide */
     .back-to-top {
       position: fixed;
       right: 20px;
@@ -366,7 +366,7 @@
       border-color: #444;
     }
 
-    /* persistent music player — slim bar pinned to the very bottom of the page */
+    /* persistent music player - slim bar pinned to the very bottom of the page */
     .player-bar {
       position: fixed;
       left: 0;
@@ -487,7 +487,7 @@
       color: var(--muted);
     }
 
-    /* live equalizer — replaces a progress bar; bars only animate while
+    /* live equalizer - replaces a progress bar; bars only animate while
        actual audio is playing, sit flat otherwise */
     .player-eq {
       flex-shrink: 0;
@@ -517,7 +517,7 @@
     }
 
     /* once real frequency data is available, JS drives each bar's transform
-       directly every frame — the CSS keyframe has to step aside, since a
+       directly every frame - the CSS keyframe has to step aside, since a
        running animation would otherwise keep overriding the inline style */
     .player-eq.is-audio-reactive span {
       animation: none;
@@ -577,7 +577,7 @@
       display: block;
     }
 
-    /* real volume control — the mute icon now does quick on/off, the
+    /* real volume control - the mute icon now does quick on/off, the
        slider handles actual level, so it's not just a second pause button */
     .player-volume {
       position: relative;
@@ -658,7 +658,7 @@
       border-radius: 999px;
     }
 
-    /* fullscreen listening mode — opened by tapping the track info in the
+    /* fullscreen listening mode - opened by tapping the track info in the
        main bar. Sits below the VHS glitch layer on purpose, so a track
        transition's glitch flash still reads on top of it. */
     .fullscreen-player {
@@ -833,7 +833,7 @@
       border-color: rgba(255, 255, 255, .4);
     }
 
-    /* transmission log — this session's tracks, fullscreen mode only */
+    /* transmission log - this session's tracks, fullscreen mode only */
     .fs-log-toggle {
       position: absolute;
       top: calc(20px + env(safe-area-inset-top, 0px));
@@ -926,7 +926,7 @@
       color: rgba(255, 255, 255, .45);
     }
 
-    /* session evolution — tiny drifting symbols (20 min of listening,
+    /* session evolution - tiny drifting symbols (20 min of listening,
        desktop only) and one quiet line (30 min) */
     .evo-symbols {
       position: fixed;
@@ -1097,7 +1097,7 @@
       -webkit-user-select: none;
     }
 
-    /* chromatic aberration on hover — uses "filter", a property the
+    /* chromatic aberration on hover - uses "filter", a property the
        color-cycling animation never touches, so it layers cleanly on top
        without fighting the running animation for priority */
     h1:hover {
@@ -1226,7 +1226,7 @@
       border-color: #444;
     }
 
-    /* Category 4 — album "portals": hidden entirely on touch/mobile by
+    /* Category 4 - album "portals": hidden entirely on touch/mobile by
        default (zero layout or paint cost there). On real desktop hover
        (never sticky-tapped on touch), the card pops slightly above its
        neighbors without shifting the grid, its cover art reveals under a
@@ -1328,7 +1328,7 @@
       min-width: 0;
     }
 
-    /* cover art thumbnail — background-image per album is set below */
+    /* cover art thumbnail - background-image per album is set below */
     .cover {
       width: 46px;
       height: 46px;
@@ -1351,7 +1351,7 @@
     .album:nth-of-type(4) .cover { background-image: url("data:image/jpeg;base64,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"); }
     .album:nth-of-type(5) .cover { background-image: url("data:image/jpeg;base64,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"); }
 
-    /* mystery cover for an unreleased album — no artwork yet, so a plain
+    /* mystery cover for an unreleased album - no artwork yet, so a plain
        dashed placeholder with a "?" stands in, echoing the shuffle tile's
        dashed language for "this one's a little different" */
     .album.unreleased-album .cover {
@@ -1468,7 +1468,7 @@
       display: block;
     }
 
-    /* shuffle tile — always its own full-width row under the releases */
+    /* shuffle tile - always its own full-width row under the releases */
     .shuffle-album {
       grid-column: 1 / -1;
       min-height: auto;
@@ -1598,7 +1598,7 @@
       footer { flex-direction: column; }
     }
 
-    /* print joke — nobody needs a paper copy of this */
+    /* print joke - nobody needs a paper copy of this */
     .print-only {
       display: none;
     }
@@ -1905,7 +1905,7 @@
       <div class="wrap">
         <div class="section-title">
           <h2>Releases</h2>
-          <span class="count">01 — 05</span>
+          <span class="count">01 - 05</span>
         </div>
 
         <div class="albums">
@@ -2213,7 +2213,7 @@
       });
     }
 
-    // "pick an album for me" — open a random release in a new tab
+    // "pick an album for me" - open a random release in a new tab
     const shuffleBtn = document.getElementById("shuffleBtn");
     if (shuffleBtn) {
       const albumLinks = Array.from(
@@ -2228,10 +2228,10 @@
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // shared audio-analysis plumbing — built once, feeds the real equalizer,
+    // shared audio-analysis plumbing - built once, feeds the real equalizer,
     // the reactive background, the title's bass pulse, and the cursor ghost.
     // IMPORTANT: once an <audio> element is wrapped via createMediaElementSource,
-    // its sound no longer reaches the speakers automatically — it MUST be
+    // its sound no longer reaches the speakers automatically - it MUST be
     // routed back through to audioCtx.destination or playback goes silent.
     const AudioReactive = (function () {
       let audioCtx = null;
@@ -2383,7 +2383,7 @@
       };
     })();
 
-    // shared mood control — the time-of-day tint from before still runs by
+    // shared mood control - the time-of-day tint from before still runs by
     // default; a track can temporarily override it while it's playing, and
     // it reverts the moment playback pauses or stops
     const MoodController = (function () {
@@ -2452,7 +2452,7 @@
       return { setTrackMood, clearTrackMood };
     })();
 
-    // shared particle-behavior control — a track can override direction/
+    // shared particle-behavior control - a track can override direction/
     // speed while it plays; reverts to the calm default otherwise
     const ParticleController = (function () {
       let modeOverride = null; // { mode, speedMultiplier } or null
@@ -2472,10 +2472,10 @@
       return { setMode, clearMode, getMode };
     })();
 
-    // Category 5 — on-device site memory. Nothing here ever leaves the
+    // Category 5 - on-device site memory. Nothing here ever leaves the
     // browser: it's a few counters in localStorage so the site can notice a
     // returning visitor. If storage is blocked (private mode, sandboxed
-    // frames) everything quietly falls back to in-memory values — it never
+    // frames) everything quietly falls back to in-memory values - it never
     // throws. Visiting ?reset wipes it (handy for testing "first visit").
     const SiteMemory = (function () {
       const KEY = "stankquilizer_memory";
@@ -2500,7 +2500,7 @@
         return { firstVisit: Date.now(), visits: 0, tracksHeard: 0, albumsVisited: [], radioSessions: 0 };
       }
 
-      // never trust stored JSON — coerce every field so a corrupted entry
+      // never trust stored JSON - coerce every field so a corrupted entry
       // can't break the site
       function clean(raw) {
         const base = fresh();
@@ -2533,7 +2533,7 @@
           );
         }
       } catch (e) {
-        /* couldn't tidy the URL — the reset itself already happened above */
+        /* couldn't tidy the URL - the reset itself already happened above */
       }
 
       let parsed = null;
@@ -2577,13 +2577,13 @@
       };
     })();
 
-    // Category 5 — the site drifts slightly the longer someone actually
+    // Category 5 - the site drifts slightly the longer someone actually
     // listens. Counts real listening time (radio playing), lives in memory
     // only, so every fresh load starts clean. Stages are cumulative:
     //   5 min  faint extra grain          10 min  glow a hair stronger
     //   20 min tiny drifting symbols      30 min  one quiet line appears
     // It also owns the glow strength, which returning visitors nudge up a
-    // little per visit (capped) — the 10-minute bump is deliberately tiny.
+    // little per visit (capped) - the 10-minute bump is deliberately tiny.
     const SessionEvolution = (function () {
       const root = document.documentElement;
       const SYMBOL_SVGS = [
@@ -2712,7 +2712,7 @@
       }
 
       // first-timers get the full 2-4 flickers; anyone who's been here
-      // before gets a shorter, snappier one — the site recognizes them
+      // before gets a shorter, snappier one - the site recognizes them
       const returning = SiteMemory.getVisits() >= 2;
       const steps = returning ? 1 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 3);
       const stepMs = returning ? 40 : 60;
@@ -2778,7 +2778,7 @@
 
     // VHS-style flicker when a release link is opened
     (function vhsGlitchOnLinks() {
-      // real release links only — the shuffle tile's own click already
+      // real release links only - the shuffle tile's own click already
       // forwards to one of these via .click(), so it gets the glitch too
       document.querySelectorAll(".album:not(.shuffle-album) .album-link").forEach((link) => {
         link.addEventListener("click", flashGlitch);
@@ -2844,7 +2844,7 @@
         clickBump = 0.08;
       }
 
-      // rare, brief color-corruption flicker — "the colors occasionally break"
+      // rare, brief color-corruption flicker - "the colors occasionally break"
       function scheduleRandomGlitch() {
         const delay = 25000 + Math.random() * 45000;
         setTimeout(() => {
@@ -2901,13 +2901,13 @@
       });
     })();
 
-    // idle-state dimming — subtly dims after inactivity, wakes on any interaction
+    // idle-state dimming - subtly dims after inactivity, wakes on any interaction
     (function idleDimming() {
       const IDLE_DELAY = 20000;
       let idleTimer = null;
 
       // someone listening to the radio isn't "idle" just because their
-      // mouse hasn't moved — check playback state before ever dimming
+      // mouse hasn't moved - check playback state before ever dimming
       function isRadioPlaying() {
         const audioEl = document.getElementById("playerAudio");
         return !!(audioEl && !audioEl.paused);
@@ -2915,7 +2915,7 @@
 
       function setIdle(state) {
         if (state && isRadioPlaying()) {
-          // still "busy" even without physical interaction — check again
+          // still "busy" even without physical interaction - check again
           // shortly instead of dimming, so playback keeps this from ever
           // triggering, and dimming resumes normally once it's paused
           clearTimeout(idleTimer);
@@ -2953,7 +2953,7 @@
         try {
           document.execCommand("copy");
         } catch (err) {
-          /* clipboard unavailable — nothing more we can do */
+          /* clipboard unavailable - nothing more we can do */
         }
         document.body.removeChild(ta);
       }
@@ -2991,7 +2991,7 @@
         try {
           localStorage.setItem(LAST_PLAYED_KEY, href);
         } catch (err) {
-          /* private mode / storage disabled — UI still updates for this session */
+          /* private mode / storage disabled - UI still updates for this session */
         }
         SiteMemory.recordAlbumVisit(href);
         applyLastPlayedUI(href);
@@ -3005,7 +3005,7 @@
         const stored = localStorage.getItem(LAST_PLAYED_KEY);
         if (stored) applyLastPlayedUI(stored);
       } catch (err) {
-        /* private mode / storage disabled — skip restoring prior state */
+        /* private mode / storage disabled - skip restoring prior state */
       }
     })();
 
@@ -3026,7 +3026,7 @@
       let targetX = -100;
       let targetY = -100;
 
-      // Category 4 — cursor picks up a hint of whichever album's accent
+      // Category 4 - cursor picks up a hint of whichever album's accent
       // color is currently hovered, subtly (lower saturation/lightness than
       // the normal hue-cycle) rather than a hard color swap
       const ACCENT_HUES = [4, 152, 231, 275, 43]; // matches albums 1-5's existing hover accents
@@ -3065,7 +3065,7 @@
         el.addEventListener("mouseleave", () => cursorEl.classList.remove("is-hover"));
       });
 
-      // ghost trail — lags behind the real cursor and only becomes visible
+      // ghost trail - lags behind the real cursor and only becomes visible
       // while music is actually playing, pulsing size/opacity with the bass
       if (ghostEl) {
         let ghostX = targetX;
@@ -3100,7 +3100,7 @@
       }
     })();
 
-    // Category 4 — artwork reveal: a cursor-following spotlight on each
+    // Category 4 - artwork reveal: a cursor-following spotlight on each
     // album card unmasks its actual cover art. Desktop-only by nature (it
     // needs a real cursor to reveal anything) and skipped for reduced motion.
     (function artworkReveal() {
@@ -3117,7 +3117,7 @@
         if (!cover || !art) return;
 
         // reuse the exact image already embedded for this card's small
-        // cover thumbnail — no need to duplicate the artwork data anywhere
+        // cover thumbnail - no need to duplicate the artwork data anywhere
         const bg = window.getComputedStyle(cover).backgroundImage;
         if (bg && bg !== "none") art.style.backgroundImage = bg;
 
@@ -3136,10 +3136,10 @@
       });
     })();
 
-    // Category 4 — title glitch: any real album title containing the
+    // Category 4 - title glitch: any real album title containing the
     // letter "o" briefly corrupts its o's into 0's on hover, then reverts.
     // Titles without an "o" (STNKQLZR, u with me?, ultimate lie) simply
-    // don't have anything to trigger here — expected, not a bug.
+    // don't have anything to trigger here - expected, not a bug.
     (function titleGlitchOnHover() {
       if (prefersReducedMotion) return;
 
@@ -3160,7 +3160,7 @@
         });
     })();
 
-    // very slow, atmospheric particles behind the whole page — a calm ambient
+    // very slow, atmospheric particles behind the whole page - a calm ambient
     // drift at rest, gently amplified by overall audio energy while playing
     (function audioReactiveBackground() {
       const canvas = document.getElementById("audioBg");
@@ -3193,7 +3193,7 @@
 
       // richer live signal than a single loudness number: separate bass/
       // treble bands plus real beat detection, all derived from the actual
-      // playing audio frame by frame — no pre-analysis of the songs needed
+      // playing audio frame by frame - no pre-analysis of the songs needed
       // or possible. Thresholds are tuned low and a compression curve lifts
       // quiet passages proportionally more than loud ones, since not every
       // track here is bass-heavy or mixed hot.
@@ -3216,7 +3216,7 @@
         energyAvg += (rawOverall - energyAvg) * 0.015;
 
         // fire a "hit" from EITHER a bass transient or a general loudness
-        // transient — a quiet, low-bass track can still have percussive or
+        // transient - a quiet, low-bass track can still have percussive or
         // vocal accents that barely move the bass band but clearly move
         // overall energy, and this should still register as a hit
         const bassHit = rawBass > bassAvg * 1.18 && rawBass > 0.07;
@@ -3235,7 +3235,7 @@
         requestAnimationFrame(loop);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        beatPulse *= 0.9; // decays fast — each real hit gets a fresh, short kick
+        beatPulse *= 0.9; // decays fast - each real hit gets a fresh, short kick
 
         // compress quiet passages upward without letting loud ones blow out
         // (x^0.55 lifts a quiet 0.05 to ~0.23, but a loud 0.7 only to ~0.83)
@@ -3274,7 +3274,7 @@
             p.y += p.speed * boost * 0.6 * speedMultiplier;
             p.x += p.drift;
           } else {
-            // "up" — the default, calm ambient drift
+            // "up" - the default, calm ambient drift
             p.orbitCx = null;
             p.y -= p.speed * boost * 0.6 * speedMultiplier;
             p.x += p.drift;
@@ -3330,7 +3330,7 @@
       }
 
       // the early <head> script may have already restored a saved light
-      // theme before this ran — make sure the meta tag and label agree with it
+      // theme before this ran - make sure the meta tag and label agree with it
       syncThemeColorMeta();
       syncLabel();
 
@@ -3347,7 +3347,7 @@
         try {
           localStorage.setItem(STORAGE_KEY, goingLight ? "light" : "dark");
         } catch (e) {
-          /* private mode / storage disabled — theme still applies for this visit */
+          /* private mode / storage disabled - theme still applies for this visit */
         }
 
         syncThemeColorMeta();
@@ -3377,7 +3377,7 @@
       });
     })();
 
-    // shuffled music player — 12 real tracks, auto-advancing, reshuffles each
+    // shuffled music player - 12 real tracks, auto-advancing, reshuffles each
     // full cycle. Audio files are expected at ./audio/<file> alongside index.html.
     (function musicPlayer() {
       const bar = document.getElementById("playerBar");
@@ -3393,7 +3393,7 @@
       const eqEl = document.getElementById("playerEq");
       const audio = document.getElementById("playerAudio");
 
-      // fullscreen listening mode — optional; player still works fully without it
+      // fullscreen listening mode - optional; player still works fully without it
       const fsPlayer = document.getElementById("fullscreenPlayer");
       const fsClose = document.getElementById("fsClose");
       const fsToggle = document.getElementById("fsToggle");
@@ -3467,7 +3467,7 @@
         if (eqEl) eqEl.classList.toggle("is-playing", isPlaying);
       }
 
-      // single source of truth for "is it playing" UI — used by every
+      // single source of truth for "is it playing" UI - used by every
       // trigger (main button, fullscreen button, pause event) so the main
       // bar and fullscreen mode can never drift out of sync with each other
       function setPlayingState(isPlaying) {
@@ -3479,7 +3479,7 @@
           fsToggle.setAttribute("aria-label", isPlaying ? "pause music" : "play music");
         }
 
-        // track-specific site mood — only active while actually playing,
+        // track-specific site mood - only active while actually playing,
         // reverts to the plain time-of-day mood the instant it's paused
         if (isPlaying) {
           const currentTrack = TRACKS[queue[queueIndex]];
@@ -3559,7 +3559,7 @@
         }
       }
 
-      // "on air" transmission label — plain "now playing" until the radio
+      // "on air" transmission label - plain "now playing" until the radio
       // actually starts, then a pulsing live dot plus a slowly drifting
       // frequency number, like a signal that's never quite settled
       let freq = 103.7;
@@ -3581,7 +3581,7 @@
         if (!prefersReducedMotion) driftFrequency();
       }
 
-      // "signal lost" — a brief on-brand pause between tracks rather than
+      // "signal lost" - a brief on-brand pause between tracks rather than
       // an instant cut; skipped for reduced-motion (no gratuitous delay)
       function withSignalLost(next) {
         if (prefersReducedMotion) {
@@ -3615,7 +3615,7 @@
 
       // briefly swap the text on the radio's title and/or subtitle line, then
       // put things back. Each line restores only if it is still showing our
-      // message — if a track started (or a transition took over) meanwhile,
+      // message - if a track started (or a transition took over) meanwhile,
       // it's left alone instead of being overwritten with stale text.
       let trackFlashTimer = null;
       let albumFlashTimer = null;
@@ -3673,7 +3673,63 @@
       }
       setTimeout(maybeShowLateNightLine, SiteMemory.wasReset() ? 5200 : 2600);
 
-      // this session's transmissions — in memory only, gone on refresh
+      // The radio's idle text is a small transmission queue. Contextual lines
+      // only become eligible in the visit state they refer to, and playback
+      // permanently stops the idle rotation for this page load.
+      const idleMessages = [
+        { when: "always", track: "the room is holding its breath", album: "nothing has entered the signal" },
+        { when: "always", track: "something sleeps beneath the dial", album: "it knows the shape of silence" },
+        { when: "always", track: "the static is almost a voice", album: "almost is where it lives" },
+        { when: "always", track: "there is a second room", album: "the door is not in here" },
+        { when: "always", track: "the signal came from below", album: "the floor has no receiver" },
+        { when: "always", track: "the quiet has a pulse", album: "it is not keeping time" },
+        { when: "always", track: "someone left the light on", album: "there is no building" },
+        { when: "always", track: "the dial moved by itself", album: "it stopped before the name" },
+        { when: "always", track: "the air is waiting", album: "you can leave it that way" },
+        { when: "always", track: "nothing is missing", album: "something is unaccounted for" },
+        { when: "always", track: "this frequency has a shadow", album: "it arrives a moment late" },
+        { when: "always", track: "the room forgot its dimensions", album: "the walls kept listening" },
+        { when: "first", track: "first contact recorded", album: "the record has no handwriting" },
+        { when: "first", track: "you found the dial", album: "it was already warm" },
+        { when: "first", track: "no signal is waiting for you", album: "it arrived with the room" },
+        { when: "first", track: "the station has no address", album: "you are close enough" },
+        { when: "returning", track: "you left the receiver open", album: "something stayed on the line" },
+        { when: "returning", track: "the quiet kept your place", album: "nothing moved while you were gone" },
+        { when: "returning", track: "your shape appeared again", album: "the static recognized it first" },
+        { when: "returning", track: "the last signal was saved", album: "the timestamp was not" },
+        { when: "late-night", track: "the hour has gone thin", album: "try not to wake it" },
+        { when: "late-night", track: "the dark is repeating something", album: "you heard it first" },
+        { when: "late-night", track: "no clocks work in this room", album: "yours still does" },
+        { when: "reset", track: "the old signal was erased", album: "its outline is still warm" },
+        { when: "reset", track: "something began again", album: "it remembers beginning" },
+        { when: "reset", track: "new life detected", album: "the room denies the change" }
+      ];
+      const shownIdleMessages = new Set();
+      let idleMessageTimer = null;
+      function rotateIdleMessage() {
+        if (hasStarted || !audio.paused) return;
+        const visits = SiteMemory.getVisits();
+        const hour = new Date().getHours();
+        const contexts = new Set(["always"]);
+        if (visits <= 1) contexts.add("first");
+        if (visits > 1) contexts.add("returning");
+        if (hour < 6) contexts.add("late-night");
+        if (SiteMemory.wasReset()) contexts.add("reset");
+        let candidates = idleMessages.filter(message => contexts.has(message.when) && !shownIdleMessages.has(message));
+        if (!candidates.length) {
+          shownIdleMessages.clear();
+          candidates = idleMessages.filter(message => contexts.has(message.when));
+        }
+        if (!candidates.length) return;
+        const message = candidates[Math.floor(Math.random() * candidates.length)];
+        shownIdleMessages.add(message);
+        flashLines(message.track, message.album, 6200);
+        idleMessageTimer = setTimeout(rotateIdleMessage, 22000 + Math.random() * 26000);
+      }
+      idleMessageTimer = setTimeout(rotateIdleMessage, 13000 + Math.random() * 5000);
+      audio.addEventListener("play", () => clearTimeout(idleMessageTimer), { once: true });
+
+      // this session's transmissions - in memory only, gone on refresh
       const sessionLog = [];
       function logTrackHeard(track) {
         if (!track || !fsLogList) return;
@@ -3719,7 +3775,7 @@
         const playPromise = audio.play();
         if (playPromise && typeof playPromise.catch === "function") {
           playPromise.catch(() => {
-            // autoplay/decoding hiccup — UI still reflects intended state,
+            // autoplay/decoding hiccup - UI still reflects intended state,
             // browser will surface it via the audio element itself
           });
         }
@@ -3782,7 +3838,7 @@
       if (fsToggle) fsToggle.addEventListener("click", togglePlayPause);
       if (fsNext) fsNext.addEventListener("click", goNext);
 
-      // fullscreen open/close — opens on tapping the track info, closes via
+      // fullscreen open/close - opens on tapping the track info, closes via
       // the X button, Escape, or tapping the blurred backdrop itself
       if (fsPlayer) {
         function openFullscreen() {
@@ -3820,7 +3876,7 @@
         });
       }
 
-      // volume is the single source of truth (no separate .muted flag) —
+      // volume is the single source of truth (no separate .muted flag) -
       // the icon gives a quick on/off, the slider gives real level control,
       // so this is meaningfully different from the play/pause button
       let lastVolume = 1;
@@ -3834,7 +3890,7 @@
       }
 
       // the popup shows on hover/focus via pure CSS already (see :hover /
-      // :focus-within) — this just handles touch devices, where there's no
+      // :focus-within) - this just handles touch devices, where there's no
       // hover: a tap opens it, it stays open while you interact, and it
       // auto-closes after a short idle window or a tap elsewhere
       let popupHideTimer = null;
@@ -3897,7 +3953,7 @@
         const t = audio.currentTime;
         const delta = t - lastTime;
         lastTime = t;
-        // only count ordinary forward playback — ignore track switches,
+        // only count ordinary forward playback - ignore track switches,
         // seeks, and anything paused
         if (audio.paused || !(delta > 0 && delta < 1.5)) return;
         SessionEvolution.add(delta);
@@ -3921,7 +3977,7 @@
       });
     })();
 
-    // tab-title trick — after a while away, the title calls you back
+    // tab-title trick - after a while away, the title calls you back
     (function tabTitleTrick() {
       const originalTitle = document.title;
       const AWAY_DELAY = 25000;
@@ -3940,7 +3996,7 @@
       });
     })();
 
-    // konami-lite — a shortened version of the classic code (just the
+    // konami-lite - a shortened version of the classic code (just the
     // directional part, no B/A) scrambles the whole page for a bit of chaos
     (function chaosShuffle() {
       const sequence = [
@@ -3989,7 +4045,7 @@
       });
     })();
     // ================================================================
-    // post-v3.6 feature pass — selected unfinished roadmap items
+    // post-v3.6 feature pass - selected unfinished roadmap items
     // ================================================================
     (function postV36FeaturePass() {
       const audio = document.getElementById("playerAudio");
@@ -4231,7 +4287,7 @@
         memoryFlash._timer = setTimeout(() => memoryFlash.classList.remove("is-visible"), duration);
       }
 
-      // "same hour as last time" — once per session, only when the previous
+      // "same hour as last time" - once per session, only when the previous
       // visit really happened in the same local hour.
       try {
         if (sameHour && sessionStorage.getItem("stankquilizer_same_hour_shown") !== "1") {
@@ -4281,7 +4337,7 @@
       if (fsLogCopy) {
         fsLogCopy.addEventListener("click", async () => {
           const lines = fsLogList ? Array.from(fsLogList.querySelectorAll("li")).map((li) => li.textContent.replace(/\s+/g, " ").trim()) : [];
-          const text = lines.length ? `stankquilizer radio — setlist\n${lines.map((x, i) => `${String(i + 1).padStart(2, "0")} ${x}`).join("\n")}` : "stankquilizer radio — setlist\nnothing received yet";
+          const text = lines.length ? `stankquilizer radio - setlist\n${lines.map((x, i) => `${String(i + 1).padStart(2, "0")} ${x}`).join("\n")}` : "stankquilizer radio - setlist\nnothing received yet";
           try {
             if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
             else throw new Error("clipboard unavailable");
