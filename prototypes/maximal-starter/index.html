@@ -21,7 +21,7 @@ header{height:76px;display:flex;align-items:center;justify-content:space-between
 .release{position:relative;display:flex;flex-direction:column;min-width:0;isolation:isolate;perspective:1000px;transition:transform .6s var(--ease);--tilt:0deg}
 .release a{display:block;height:100%;position:relative;outline-offset:5px}
 .release .art{position:absolute;inset:0;overflow:hidden;background:var(--paper);box-shadow:var(--shadow);transform:rotate(var(--tilt));transition:transform .65s var(--ease),filter .5s;transform-origin:center;will-change:transform}
-.release .art img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .9s var(--ease),filter .65s}
+.release .art img{width:100%;height:100%;object-fit:contain;display:block;background:var(--bg);transition:transform .9s var(--ease),filter .65s}
 .release:hover{z-index:5}.release:hover .art{transform:rotate(0deg) scale(1.035);filter:saturate(1.12)}.release:hover .art img{filter:saturate(1.16) contrast(1.035)}
 .release .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,9,16,.04) 28%,rgba(12,9,16,.78) 100%);opacity:.86;transition:opacity .45s}.release:hover .veil{opacity:1}
 .release .meta{position:absolute;left:0;right:0;bottom:0;padding:17px 18px;color:#fff;display:flex;align-items:end;justify-content:space-between;gap:12px}.release .meta h2{font:600 clamp(18px,2.2vw,34px)/.94 var(--display);letter-spacing:-.065em;margin:5px 0 0;text-transform:lowercase}.release .meta small{font:8px var(--mono);letter-spacing:.1em;text-transform:lowercase;opacity:.82}.release .count{font:9px var(--mono);white-space:nowrap;opacity:.9}
@@ -132,7 +132,7 @@ footer{color:var(--muted)}
 .release .art{isolation:isolate;transform-style:preserve-3d}
 .release .art img{position:relative;z-index:0}
 .release .veil{z-index:1}
-.mosh-layer{position:absolute!important;inset:-1.5%!important;width:103%!important;height:103%!important;object-fit:cover;z-index:2!important;opacity:0;pointer-events:none;mix-blend-mode:screen;will-change:transform,clip-path,opacity}
+.mosh-layer{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain;z-index:2!important;opacity:0;pointer-events:none;mix-blend-mode:screen;will-change:transform,clip-path,opacity}
 .mosh-b{mix-blend-mode:lighten;filter:hue-rotate(72deg) saturate(1.8) contrast(1.2)}
 [data-mosh=on] .release.is-moshing .mosh-a{opacity:.72;animation:mosh-a .68s steps(1,end) both}
 [data-mosh=on] .release.is-moshing .mosh-b{opacity:.48;animation:mosh-b .68s steps(1,end) both}
