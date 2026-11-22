@@ -1,4 +1,4 @@
-# maximal starter — archive only
+# maximal starter - archive only
 
 This is a design prototype archive, not part of the production website.
 
