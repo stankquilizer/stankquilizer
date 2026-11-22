@@ -172,37 +172,7 @@ html.booting .boot-screen{display:flex}
 @media(max-width:600px){.boot-orbit{width:108vw}.boot-index{left:15px;top:16px}.boot-coordinate{right:15px;bottom:16px}.boot-message{margin:24px 0 22px}}
 @media(prefers-reduced-motion:reduce){.boot-orbit,.boot-screen::before{animation:none}.boot-progress span{transition:none}.boot-screen.is-leaving{transition:none}}
 </style>
-<script>
-(()=>{
- const root=document.documentElement,themeButton=document.getElementById('theme');
- const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,finePointer=matchMedia('(pointer:fine)').matches;
- const store={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}}};
- if(store.get('stank-maximal-theme')==='dark')root.dataset.theme='dark';
- const syncTheme=()=>themeButton.textContent=root.dataset.theme==='dark'?'dark / light ↗':'light / dark ↗';
- syncTheme();themeButton.addEventListener('click',()=>{root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';store.set('stank-maximal-theme',root.dataset.theme);syncTheme()});
- const effects={mosh:true,blob:true,beam:true};
- Object.keys(effects).forEach(k=>{const v=store.get('stank-maximal-fx-'+k);if(v==='off')effects[k]=false;if(v==='on')effects[k]=true});
- const apply=()=>{Object.keys(effects).forEach(k=>root.dataset[k]=effects[k]?'on':'off');document.querySelectorAll('[data-fx-toggle]').forEach(b=>{const k=b.dataset.fxToggle;b.setAttribute('aria-pressed',String(effects[k]));b.textContent=k+' / '+(effects[k]?'on':'off')})};
- document.querySelectorAll('[data-fx-toggle]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.fxToggle;effects[k]=!effects[k];store.set('stank-maximal-fx-'+k,effects[k]?'on':'off');apply();if(k==='beam'&&!effects.beam)document.getElementById('flashlight').classList.remove('is-active');if(k==='blob'&&!effects.blob)document.getElementById('blobTracker').classList.remove('is-active')}));
- apply();
- const cards=[...document.querySelectorAll('.release')],timers=new WeakMap();
- const burst=card=>{if(!effects.mosh||reduced)return;card.classList.remove('is-moshing');void card.offsetWidth;card.classList.add('is-moshing');clearTimeout(timers.get(card));timers.set(card,setTimeout(()=>card.classList.remove('is-moshing'),720))};
- cards.forEach(card=>{
-  const art=card.querySelector('.art'),source=art&&art.querySelector('img');
-  if(source)['mosh-a','mosh-b'].forEach(name=>{const layer=source.cloneNode(false);layer.removeAttribute('alt');layer.setAttribute('aria-hidden','true');layer.setAttribute('draggable','false');layer.className='mosh-layer '+name;layer.style.objectPosition=getComputedStyle(source).objectPosition;art.appendChild(layer)});
-  card.addEventListener('pointerenter',()=>burst(card));card.addEventListener('click',()=>burst(card));
-  if(!reduced&&finePointer){let lastX=0,lastY=0,lastBurst=0;card.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;art.style.setProperty('--card-x',x.toFixed(3));art.style.setProperty('--card-y',y.toFixed(3));art.style.transform='perspective(900px) rotateX('+(-y*3.2)+'deg) rotateY('+(x*4.2)+'deg) scale(1.018)';if(Math.hypot(e.clientX-lastX,e.clientY-lastY)>38&&performance.now()-lastBurst>640){burst(card);lastBurst=performance.now()}lastX=e.clientX;lastY=e.clientY});card.addEventListener('pointerleave',()=>{art.style.transform='';art.style.removeProperty('--card-x');art.style.removeProperty('--card-y')})}
- });
- if(!reduced&&'IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el))}else document.querySelectorAll('[data-reveal]').forEach(el=>el.classList.add('in'));
- const collage=document.querySelector('.collage');if(collage){const layout=1+Math.floor(Math.random()*3);collage.classList.add('layout-'+layout);collage.dataset.arrangement='composition '+String(layout).padStart(2,'0')}
- const beam=document.getElementById('flashlight'),blob=document.getElementById('blobTracker'),nodes=[...blob.querySelectorAll('.blob,.blob-core')],point={x:innerWidth*.5,y:innerHeight*.45};const pos=nodes.map(()=>({x:point.x,y:point.y}));let frame=0;
- const animate=()=>{frame=0;let active=false;nodes.forEach((node,i)=>{const lag=[.34,.21,.14,.48][i]||.2,ox=[0,-31,27,0][i]||0,oy=[0,24,-19,0][i]||0,p=pos[i],tx=point.x+ox,ty=point.y+oy;p.x+=(tx-p.x)*lag;p.y+=(ty-p.y)*lag;node.style.transform='translate3d('+(p.x-node.offsetWidth/2)+'px,'+(p.y-node.offsetHeight/2)+'px,0)';if(Math.abs(tx-p.x)+Math.abs(ty-p.y)>.8)active=true});if(active)frame=requestAnimationFrame(animate)};
- const move=e=>{point.x=e.clientX;point.y=e.clientY;root.style.setProperty('--pointer-x',point.x+'px');root.style.setProperty('--pointer-y',point.y+'px');if(effects.beam)beam.classList.add('is-active');if(effects.blob&&finePointer)blob.classList.add('is-active');if(!frame)frame=requestAnimationFrame(animate)};
- if(!reduced){addEventListener('pointermove',move,{passive:true});addEventListener('pointerdown',e=>{move(e);const card=e.target.closest&&e.target.closest('.release');if(card)burst(card);root.classList.add('signal-hit');setTimeout(()=>root.classList.remove('signal-hit'),260)},{passive:true});addEventListener('pointerleave',()=>{beam.classList.remove('is-active');blob.classList.remove('is-active')})}
- let scrollFrame=0;const scroll=()=>{const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);root.style.setProperty('--scroll',String(Math.min(1,scrollY/max)));scrollFrame=0};addEventListener('scroll',()=>{if(!scrollFrame)scrollFrame=requestAnimationFrame(scroll)},{passive:true});scroll();
- if(reduced){root.dataset.mosh='off';root.dataset.blob='off';root.dataset.beam='off';document.querySelectorAll('[data-fx-toggle]').forEach(b=>{b.setAttribute('aria-pressed','false');b.textContent=b.dataset.fxToggle+' / reduced'})}
-})();
-</script>
+<script>document.documentElement.classList.add('booting')</script>
 </head>
 <body>
 
@@ -239,13 +209,34 @@ html.booting .boot-screen{display:flex}
  <footer class="bottom-line"><span>stankquilizer © 2026</span><span>five releases / forty-three tracks</span><span>made to be remixed ↗</span></footer>
 </div>
 <script>
-(()=>{const root=document.documentElement,button=document.getElementById('theme');let saved=null;try{saved=localStorage.getItem('stank-maximal-theme')}catch{}if(saved==='dark')root.dataset.theme='dark';const sync=()=>button.textContent=root.dataset.theme==='dark'?'dark / light ↗':'light / dark ↗';sync();button.addEventListener('click',()=>{root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('stank-maximal-theme',root.dataset.theme)}catch{}sync()});
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;const cards=[...document.querySelectorAll('.release')];if(!reduced&&matchMedia('(pointer:fine)').matches){cards.forEach((card,i)=>{const art=card.querySelector('.art');card.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;art.style.transform='rotateX('+(-y*4)+'deg) rotateY('+(x*5)+'deg) scale(1.025)'});card.addEventListener('pointerleave',()=>art.style.transform='')})}
-if(!reduced&&'IntersectionObserver'in window){const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el))}else document.querySelectorAll('[data-reveal]').forEach(el=>el.classList.add('in'));
-
-const collage=document.querySelector('.collage');
-if(collage){const layout=1+Math.floor(Math.random()*3);collage.classList.add('layout-'+layout);collage.dataset.arrangement='composition '+String(layout).padStart(2,'0')}
-if(!reduced){const light=document.querySelector('.cursor-light');let ticking=false;const updateAtmosphere=()=>{const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);root.style.setProperty('--scroll',String(Math.min(1,scrollY/max)));ticking=false};addEventListener('scroll',()=>{if(!ticking){requestAnimationFrame(updateAtmosphere);ticking=true}},{passive:true});updateAtmosphere();if(light&&matchMedia('(pointer:fine)').matches){addEventListener('pointermove',e=>{root.style.setProperty('--mx',e.clientX+'px');root.style.setProperty('--my',e.clientY+'px');light.style.opacity='.95'},{passive:true});addEventListener('pointerleave',()=>light.style.opacity='0')}}
+(()=>{
+ const root=document.documentElement,themeButton=document.getElementById('theme');
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,finePointer=matchMedia('(pointer:fine)').matches;
+ const store={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}}};
+ if(store.get('stank-maximal-theme')==='dark')root.dataset.theme='dark';
+ const syncTheme=()=>themeButton.textContent=root.dataset.theme==='dark'?'dark / light ↗':'light / dark ↗';
+ syncTheme();themeButton.addEventListener('click',()=>{root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';store.set('stank-maximal-theme',root.dataset.theme);syncTheme()});
+ const effects={mosh:true,blob:true,beam:true};
+ Object.keys(effects).forEach(k=>{const v=store.get('stank-maximal-fx-'+k);if(v==='off')effects[k]=false;if(v==='on')effects[k]=true});
+ const apply=()=>{Object.keys(effects).forEach(k=>root.dataset[k]=effects[k]?'on':'off');document.querySelectorAll('[data-fx-toggle]').forEach(b=>{const k=b.dataset.fxToggle;b.setAttribute('aria-pressed',String(effects[k]));b.textContent=k+' / '+(effects[k]?'on':'off')})};
+ document.querySelectorAll('[data-fx-toggle]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.fxToggle;effects[k]=!effects[k];store.set('stank-maximal-fx-'+k,effects[k]?'on':'off');apply();if(k==='beam'&&!effects.beam)document.getElementById('flashlight').classList.remove('is-active');if(k==='blob'&&!effects.blob)document.getElementById('blobTracker').classList.remove('is-active')}));
+ apply();
+ const cards=[...document.querySelectorAll('.release')],timers=new WeakMap();
+ const burst=card=>{if(!effects.mosh||reduced)return;card.classList.remove('is-moshing');void card.offsetWidth;card.classList.add('is-moshing');clearTimeout(timers.get(card));timers.set(card,setTimeout(()=>card.classList.remove('is-moshing'),720))};
+ cards.forEach(card=>{
+  const art=card.querySelector('.art'),source=art&&art.querySelector('img');
+  if(source)['mosh-a','mosh-b'].forEach(name=>{const layer=source.cloneNode(false);layer.removeAttribute('alt');layer.setAttribute('aria-hidden','true');layer.setAttribute('draggable','false');layer.className='mosh-layer '+name;layer.style.objectPosition=getComputedStyle(source).objectPosition;art.appendChild(layer)});
+  card.addEventListener('pointerenter',()=>burst(card));card.addEventListener('click',()=>burst(card));
+  if(!reduced&&finePointer){let lastX=0,lastY=0,lastBurst=0;card.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;art.style.setProperty('--card-x',x.toFixed(3));art.style.setProperty('--card-y',y.toFixed(3));art.style.transform='perspective(900px) rotateX('+(-y*3.2)+'deg) rotateY('+(x*4.2)+'deg) scale(1.018)';if(Math.hypot(e.clientX-lastX,e.clientY-lastY)>38&&performance.now()-lastBurst>640){burst(card);lastBurst=performance.now()}lastX=e.clientX;lastY=e.clientY});card.addEventListener('pointerleave',()=>{art.style.transform='';art.style.removeProperty('--card-x');art.style.removeProperty('--card-y')})}
+ });
+ if(!reduced&&'IntersectionObserver'in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el))}else document.querySelectorAll('[data-reveal]').forEach(el=>el.classList.add('in'));
+ const collage=document.querySelector('.collage');if(collage){const layout=1+Math.floor(Math.random()*3);collage.classList.add('layout-'+layout);collage.dataset.arrangement='composition '+String(layout).padStart(2,'0')}
+ const beam=document.getElementById('flashlight'),blob=document.getElementById('blobTracker'),nodes=[...blob.querySelectorAll('.blob,.blob-core')],point={x:innerWidth*.5,y:innerHeight*.45};const pos=nodes.map(()=>({x:point.x,y:point.y}));let frame=0;
+ const animate=()=>{frame=0;let active=false;nodes.forEach((node,i)=>{const lag=[.34,.21,.14,.48][i]||.2,ox=[0,-31,27,0][i]||0,oy=[0,24,-19,0][i]||0,p=pos[i],tx=point.x+ox,ty=point.y+oy;p.x+=(tx-p.x)*lag;p.y+=(ty-p.y)*lag;node.style.transform='translate3d('+(p.x-node.offsetWidth/2)+'px,'+(p.y-node.offsetHeight/2)+'px,0)';if(Math.abs(tx-p.x)+Math.abs(ty-p.y)>.8)active=true});if(active)frame=requestAnimationFrame(animate)};
+ const move=e=>{point.x=e.clientX;point.y=e.clientY;root.style.setProperty('--pointer-x',point.x+'px');root.style.setProperty('--pointer-y',point.y+'px');if(effects.beam)beam.classList.add('is-active');if(effects.blob&&finePointer)blob.classList.add('is-active');if(!frame)frame=requestAnimationFrame(animate)};
+ if(!reduced){addEventListener('pointermove',move,{passive:true});addEventListener('pointerdown',e=>{move(e);const card=e.target.closest&&e.target.closest('.release');if(card)burst(card);root.classList.add('signal-hit');setTimeout(()=>root.classList.remove('signal-hit'),260)},{passive:true});addEventListener('pointerleave',()=>{beam.classList.remove('is-active');blob.classList.remove('is-active')})}
+ let scrollFrame=0;const scroll=()=>{const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);root.style.setProperty('--scroll',String(Math.min(1,scrollY/max)));scrollFrame=0};addEventListener('scroll',()=>{if(!scrollFrame)scrollFrame=requestAnimationFrame(scroll)},{passive:true});scroll();
+ if(reduced){root.dataset.mosh='off';root.dataset.blob='off';root.dataset.beam='off';document.querySelectorAll('[data-fx-toggle]').forEach(b=>{b.setAttribute('aria-pressed','false');b.textContent=b.dataset.fxToggle+' / reduced'})}
 })();
 </script>
 <script>
