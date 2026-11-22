@@ -11,7 +11,7 @@ const albumFiles = slugs.map(slug => readFileSync(new URL('./albums/' + slug + '
 const mysteryPage = readFileSync(new URL('./albums/unreleased.html', import.meta.url), 'utf8');
 
 test('all homepage scripts parse and the loader boot sequence stays before body', () => {
-  assert.equal(scripts.length, 4);
+  assert.equal(scripts.length, 5);
   scripts.forEach((source, index) => assert.doesNotThrow(() => new Script(source), 'script ' + (index + 1)));
   assert.match(scripts[0], /document\.documentElement\.classList\.add\('booting'\)/);
   assert.ok(html.indexOf(scripts[0]) < html.indexOf('<body>'));
@@ -63,7 +63,7 @@ test('floating phrases use measured free space and collision buffers', () => {
   assert.match(scripts[3], /--drift-x/);
   for (const page of albumFiles) {
     const pageScripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-    assert.equal(pageScripts.length, 2);
+    assert.equal(pageScripts.length, 3);
     pageScripts.forEach(source => assert.doesNotThrow(() => new Script(source)));
     assert.match(pageScripts[1], /const intersects=/);
     assert.match(pageScripts[1], /Math\.random\(\)<\.5/);
@@ -132,6 +132,43 @@ test('interactive controls use eased transitions without blanket transition-all'
 
 test('all prototype pages use hyphens rather than em dashes', () => {
   assert.doesNotMatch([html, ...albumFiles, mysteryPage].join('\n'), /\u2014/);
+});
+
+
+test('ten alien-world variants are randomized on every page load and remain theme-adaptive', () => {
+  const worldScript = scripts.find(source => source.includes('Math.floor(Math.random()*10)'));
+  assert.ok(worldScript, 'homepage world generator is installed');
+  assert.match(worldScript, /root\.dataset\.world=String\(world\)/);
+  assert.match(worldScript, /Promise\.allSettled/);
+  assert.match(html, /id="world-generation-motion-pass"/);
+  for (let i = 0; i < 10; i++) assert.match(html, new RegExp('data-world="' + i + '"'));
+  assert.match(html, /\[data-theme="light"\] \.world-field/);
+  assert.match(html, /\[data-theme="dark"\] \.world-field/);
+  for (const page of [...albumFiles, mysteryPage]) {
+    assert.match(page, /id="world-generation-motion-pass"/);
+    assert.match(page, /id="world-generation-and-prewarm"/);
+    assert.match(page, /Math\.floor\(Math\.random\(\)\*10\)/);
+    assert.match(page, /data-world/);
+  }
+});
+
+test('the main-page drift phrase pool is doubled and the moving word is interactive', () => {
+  const match = scripts[3].match(/const phrases=\[([\s\S]*?)\];/);
+  assert.ok(match);
+  assert.equal((match[1].match(/'[^']+'/g) || []).length, 60);
+  assert.match(scripts[3], /count=vw<760\?8:18/);
+  assert.match(html, /class="move-word">moving<\/span>/);
+  assert.match(html, /@keyframes note-twitch/);
+  assert.match(html, /\.gap-note \.move-word:hover/);
+});
+
+test('visual prewarm decodes page artwork and waits for fonts without blocking interaction', () => {
+  const worldScript = scripts.find(source => source.includes('window.__stankVisualState'));
+  assert.ok(worldScript);
+  assert.match(worldScript, /img\.decode\(\)/);
+  assert.match(worldScript, /document\.fonts\?\.ready/);
+  assert.match(worldScript, /root\.dataset\.visualWarm='true'/);
+  assert.doesNotMatch(worldScript, /setTimeout\([^)]*Infinity/);
 });
 
 test('all authored CSS blocks have balanced braces', () => {
