@@ -58,6 +58,7 @@ test('floating phrases use measured free space and collision buffers', () => {
   assert.match(scripts[3], /placed\.some\(o=>intersects\(box,o\)\)/);
   assert.match(scripts[3], /left:r\.left-17/);
   assert.match(scripts[3], /right:r\.right\+17/);
+  assert.match(scripts[3], /\.kicker/);
   assert.match(html, /drift-float[\s\S]{0,120}translate3d\(0,-5px,0\)/);
   for (const page of albumFiles) {
     const pageScripts = [...page.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1]);
@@ -65,6 +66,8 @@ test('floating phrases use measured free space and collision buffers', () => {
     pageScripts.forEach(source => assert.doesNotThrow(() => new Script(source)));
     assert.match(pageScripts[1], /const intersects=/);
     assert.match(pageScripts[1], /Math\.random\(\)<\.5/);
+    assert.match(pageScripts[1], /profileIndex/);
+    assert.match(pageScripts[1], /profile\.duration/);
     assert.match(page, /cover-photism/);
     assert.match(page, /cover-mosh-layer/);
   }
