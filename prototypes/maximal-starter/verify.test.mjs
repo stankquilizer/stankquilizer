@@ -30,8 +30,8 @@ test('the three visual systems have independent, accessible controls', () => {
   assert.equal((html.match(/data-fx-toggle=/g) || []).length, 3);
   for (const key of ['mosh', 'blob', 'beam']) {
     assert.match(html, new RegExp('data-fx-toggle="' + key + '" aria-pressed="true"'));
-    assert.match(html, new RegExp('data-' + key + '=(?:\\'on\\'|"on")'));
   }
+  assert.match(html, /const effects=\{mosh:true,blob:true,beam:true\}/);
   assert.match(html, /id="flashlight"/);
   assert.match(html, /id="blobTracker"/);
   assert.match(html, /mosh-layer mosh-a/);
