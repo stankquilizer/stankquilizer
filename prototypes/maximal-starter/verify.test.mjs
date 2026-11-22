@@ -4,25 +4,25 @@ import { readFileSync } from 'node:fs';
 import { Script } from 'node:vm';
 
 const html = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
-const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)].map(match => match[1]);
-const styles = [...html.matchAll(/<style(?:\\s[^>]*)?>([\\s\\S]*?)<\\/style>/g)].map(match => match[1]);
+const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(match => match[1]);
+const styles = [...html.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)].map(match => match[1]);
 const slugs = ['stnkqlzr', 'summer-two-six-ep', 'from-now-on', 'u-with-me', 'ultimate-lie'];
 const albumFiles = slugs.map(slug => readFileSync(new URL('./albums/' + slug + '.html', import.meta.url), 'utf8'));
 
 test('all homepage scripts parse and the loader boot sequence stays before body', () => {
   assert.equal(scripts.length, 4);
   scripts.forEach((source, index) => assert.doesNotThrow(() => new Script(source), 'script ' + (index + 1)));
-  assert.match(scripts[0], /document\\.documentElement\\.classList\\.add\\('booting'\\)/);
+  assert.match(scripts[0], /document\.documentElement\.classList\.add\('booting'\)/);
   assert.ok(html.indexOf(scripts[0]) < html.indexOf('<body>'));
 });
 
 test('the five homepage release cards route to native album files, never Untitled', () => {
-  const cards = [...html.matchAll(/<article class="release r[1-5]"[\\s\\S]*?<\\/article>/g)].map(match => match[0]);
+  const cards = [...html.matchAll(/<article class="release r[1-5]"[\s\S]*?<\/article>/g)].map(match => match[0]);
   assert.equal(cards.length, 5);
-  assert.doesNotMatch(html, /untitled\\.stream\\/library\\/project/);
+  assert.doesNotMatch(html, /untitled\.stream\/library\/project/);
   for (const [i, card] of cards.entries()) {
-    assert.match(card, new RegExp('href="albums\\/' + slugs[i] + '\\.html"'));
-    assert.match(card, /<img[^>]+src="assets\\/covers\\//);
+    assert.match(card, new RegExp('href="albums\/' + slugs[i] + '\.html"'));
+    assert.match(card, /<img[^>]+src="assets\/covers\//);
     assert.match(card, /alt="[^"]+ album cover"/);
   }
 });
@@ -53,8 +53,8 @@ test('each native album page has the correct number of numbered tracks and ten m
   albumFiles.forEach((page, i) => {
     assert.equal((page.match(/class="track" data-track=/g) || []).length, expected[i]);
     assert.equal((page.match(/data-tool="/g) || []).length, 10);
-    assert.match(page, /data-fallback="data:image\\//);
-    assert.doesNotMatch(page, /untitled\\.stream\\/library\\/project/);
+    assert.match(page, /data-fallback="data:image\//);
+    assert.doesNotMatch(page, /untitled\.stream\/library\/project/);
     assert.match(page, /track title not yet synced/);
   });
 });
@@ -68,18 +68,18 @@ test('known radio track titles are preserved without fabricating missing titles'
 test('reduced motion remains respected and loader retains its minimum wait', () => {
   assert.match(html, /prefers-reduced-motion:reduce/);
   assert.match(scripts[2], /minimumDisplay=5000/);
-  assert.match(scripts[2], /img\\.decode\\(\\)/);
-  assert.match(scripts[2], /document\\.fonts\\.ready/);
-  assert.match(scripts[2], /Promise\\.allSettled/);
+  assert.match(scripts[2], /img\.decode\(\)/);
+  assert.match(scripts[2], /document\.fonts\.ready/);
+  assert.match(scripts[2], /Promise\.allSettled/);
 });
 
 test('all authored CSS blocks have balanced braces', () => {
   for (const [index, css] of styles.entries()) {
-    assert.equal((css.match(/\\{/g) || []).length, (css.match(/\\}/g) || []).length, 'homepage style block ' + (index + 1));
+    assert.equal((css.match(/\{/g) || []).length, (css.match(/\}/g) || []).length, 'homepage style block ' + (index + 1));
   }
   for (const [i, page] of albumFiles.entries()) {
-    const css = [...page.matchAll(/<style>([\\s\\S]*?)<\\/style>/g)].map(m => m[1]);
+    const css = [...page.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]);
     assert.equal(css.length, 1);
-    assert.equal((css[0].match(/\\{/g) || []).length, (css[0].match(/\\}/g) || []).length, 'album page ' + slugs[i]);
+    assert.equal((css[0].match(/\{/g) || []).length, (css[0].match(/\}/g) || []).length, 'album page ' + slugs[i]);
   }
 });
