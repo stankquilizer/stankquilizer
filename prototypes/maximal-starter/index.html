@@ -118,7 +118,7 @@ footer{color:var(--muted)}
 .fx-controls{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:5px;margin-top:12px}
 .fx-toggle{border:1px solid var(--line);background:rgba(130,180,255,.09);color:var(--muted);padding:7px 9px;border-radius:2px;font:8px var(--mono);letter-spacing:.08em;text-transform:lowercase;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
 .fx-toggle[aria-pressed=true]{border-color:rgba(72,157,255,.62);background:rgba(65,145,255,.16);color:var(--ink);box-shadow:inset 0 0 18px rgba(90,170,255,.08)}
-.fx-toggle:hover{border-color:var(--red);color:var(--ink)}
+.fx-toggle:hover{border-color:var(--red);color:var(--ink)}.fx-toggle:disabled{opacity:.5;cursor:not-allowed}
 .flashlight{position:fixed;inset:0;z-index:32;pointer-events:none;opacity:0;background:rgba(3,9,24,.52);-webkit-mask-image:radial-gradient(circle 205px at var(--pointer-x) var(--pointer-y),transparent 0,rgba(0,0,0,.08) 62%,#000 100%);mask-image:radial-gradient(circle 205px at var(--pointer-x) var(--pointer-y),transparent 0,rgba(0,0,0,.08) 62%,#000 100%);transition:opacity .24s ease}
 .flashlight::after{content:"";position:absolute;inset:0;background:radial-gradient(circle 212px at var(--pointer-x) var(--pointer-y),transparent 0 178px,rgba(123,205,255,.23) 180px,rgba(91,169,255,.04) 188px,transparent 198px);mix-blend-mode:screen}
 .flashlight.is-active{opacity:1}
@@ -236,7 +236,7 @@ html.booting .boot-screen{display:flex}
  const move=e=>{point.x=e.clientX;point.y=e.clientY;root.style.setProperty('--pointer-x',point.x+'px');root.style.setProperty('--pointer-y',point.y+'px');if(effects.beam)beam.classList.add('is-active');if(effects.blob&&finePointer)blob.classList.add('is-active');if(!frame)frame=requestAnimationFrame(animate)};
  if(!reduced){addEventListener('pointermove',move,{passive:true});addEventListener('pointerdown',e=>{move(e);const card=e.target.closest&&e.target.closest('.release');if(card)burst(card);root.classList.add('signal-hit');setTimeout(()=>root.classList.remove('signal-hit'),260)},{passive:true});addEventListener('pointerleave',()=>{beam.classList.remove('is-active');blob.classList.remove('is-active')})}
  let scrollFrame=0;const scroll=()=>{const max=Math.max(1,document.documentElement.scrollHeight-innerHeight);root.style.setProperty('--scroll',String(Math.min(1,scrollY/max)));scrollFrame=0};addEventListener('scroll',()=>{if(!scrollFrame)scrollFrame=requestAnimationFrame(scroll)},{passive:true});scroll();
- if(reduced){root.dataset.mosh='off';root.dataset.blob='off';root.dataset.beam='off';document.querySelectorAll('[data-fx-toggle]').forEach(b=>{b.setAttribute('aria-pressed','false');b.textContent=b.dataset.fxToggle+' / reduced'})}
+ if(reduced){root.dataset.mosh='off';root.dataset.blob='off';root.dataset.beam='off';document.querySelectorAll('[data-fx-toggle]').forEach(b=>{b.disabled=true;b.setAttribute('aria-pressed','false');b.textContent=b.dataset.fxToggle+' / reduced'})}
 })();
 </script>
 <script>
