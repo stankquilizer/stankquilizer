@@ -19,7 +19,8 @@ test('all homepage scripts parse and the loader boot sequence stays before body'
 test('the five homepage release cards route to native album files, never Untitled', () => {
   const cards = [...html.matchAll(/<article class="release r[1-5]"[\s\S]*?<\/article>/g)].map(match => match[0]);
   assert.equal(cards.length, 5);
-  assert.doesNotMatch(html, /untitled\.stream\/library\/project/);
+  assert.doesNotMatch(html, /untitled\.stream/);
+  assert.match(html, /open a release file/);
   for (const [i, card] of cards.entries()) {
     assert.match(card, new RegExp('href="albums\/' + slugs[i] + '\.html"'));
     assert.match(card, /<img[^>]+src="assets\/covers\//);
