@@ -221,38 +221,39 @@ html.booting .boot-screen{display:flex}
 .world-field::after{width:34vw;height:34vw;right:12vw;bottom:-25vw;border-radius:50%;background:radial-gradient(circle,rgba(117,190,255,.14),rgba(111,153,255,.05) 42%,transparent 70%);filter:blur(10px);opacity:.7}
 .world-field .world-moon{transition:all 1.8s cubic-bezier(.18,.75,.22,1)}
 .world-field .world-horizon{transition:all 1.8s cubic-bezier(.18,.75,.22,1)}
-html[data-world="0"] .world-field{background:radial-gradient(ellipse at 80% 24%,rgba(91,157,255,.12),transparent 34%)}
-html[data-world="1"] .world-field{background:radial-gradient(ellipse at 18% 22%,rgba(172,188,255,.2),transparent 26%),radial-gradient(ellipse at 78% 72%,rgba(69,190,255,.13),transparent 34%)}
-html[data-world="1"] .world-planet{right:12%;top:8%;width:clamp(150px,22vw,330px);opacity:.25}
-html[data-world="1"] .world-moon{left:9%;top:18%;width:clamp(90px,14vw,210px);height:clamp(90px,14vw,210px);border-radius:50%;background:radial-gradient(circle at 35% 30%,#e7f7ff,rgba(128,180,255,.4) 38%,rgba(75,107,190,.06) 72%);box-shadow:0 0 65px rgba(127,186,255,.22);opacity:.62}
-html[data-world="2"] .world-field{background:radial-gradient(ellipse at 50% 85%,rgba(83,164,255,.18),transparent 48%),linear-gradient(110deg,transparent 45%,rgba(132,195,255,.05) 50%,transparent 55%)}
-html[data-world="2"] .world-planet{width:clamp(130px,21vw,310px);right:8%;top:19%;border-radius:18% 18% 48% 48%;transform:rotate(35deg);opacity:.24}
-html[data-world="2"] .world-moon{left:18%;top:12%;width:16vw;height:16vw;border:1px solid rgba(185,222,255,.34);background:linear-gradient(135deg,rgba(190,226,255,.15),transparent);clip-path:polygon(50% 0,100% 38%,78% 100%,18% 82%,0 24%);opacity:.7}
-html[data-world="3"] .world-field{background:radial-gradient(ellipse at 42% 42%,rgba(94,123,255,.16),transparent 42%),radial-gradient(ellipse at 88% 88%,rgba(55,189,255,.12),transparent 35%)}
-html[data-world="3"] .world-planet{left:4%;right:auto;top:7%;width:clamp(180px,26vw,380px);opacity:.2}
-html[data-world="3"] .world-horizon{height:34vh;clip-path:polygon(0 55%,9% 42%,18% 59%,27% 22%,39% 52%,51% 16%,61% 48%,72% 27%,83% 58%,92% 34%,100% 50%,100% 100%,0 100%);filter:hue-rotate(22deg)}
-html[data-world="4"] .world-field{background:repeating-linear-gradient(128deg,transparent 0 11vw,rgba(143,199,255,.035) 11.1vw 11.2vw,transparent 11.3vw 21vw)}
-html[data-world="4"] .world-planet{border-radius:8% 50% 12% 50%;transform:rotate(32deg) scale(.9);left:12%;right:auto;top:14%;opacity:.24}
-html[data-world="4"] .world-moon{right:12%;left:auto;top:54%;width:clamp(100px,16vw,230px);height:clamp(100px,16vw,230px);background:linear-gradient(135deg,rgba(208,239,255,.3),rgba(81,141,255,.06));clip-path:polygon(50% 0,100% 34%,78% 100%,17% 81%,0 24%);opacity:.7}
-html[data-world="5"] .world-field{background:radial-gradient(ellipse at 15% 80%,rgba(119,111,255,.18),transparent 40%),radial-gradient(ellipse at 72% 18%,rgba(80,211,255,.16),transparent 42%),radial-gradient(ellipse at 55% 55%,rgba(166,145,255,.08),transparent 55%)}
-html[data-world="5"] .world-planet{width:clamp(250px,40vw,580px);right:28%;top:26%;opacity:.13;filter:blur(1px)}
-html[data-world="5"] .world-moon{width:9vw;height:9vw;left:13%;top:25%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,rgba(134,173,255,.15) 70%);opacity:.65}
-html[data-world="6"] .world-field{background:radial-gradient(ellipse at 50% 42%,rgba(27,48,110,.18),transparent 44%),radial-gradient(ellipse at 50% 100%,rgba(112,188,255,.12),transparent 50%)}
-html[data-world="6"] .world-planet{width:clamp(240px,38vw,540px);left:32%;right:auto;top:16%;opacity:.25;filter:brightness(.68)}
-html[data-world="6"] .world-orbit{width:70vw;height:25vw;left:15%;top:30%;border-color:rgba(190,221,255,.42);transform:rotate(-12deg) rotateX(68deg)}
-html[data-world="7"] .world-field{background:radial-gradient(ellipse at 22% 66%,rgba(78,177,255,.14),transparent 28%),radial-gradient(ellipse at 75% 34%,rgba(151,156,255,.14),transparent 32%)}
-html[data-world="7"] .world-planet{width:clamp(130px,20vw,290px);left:15%;right:auto;top:14%;opacity:.22}
-html[data-world="7"] .world-moon{width:clamp(130px,19vw,270px);height:clamp(80px,12vw,170px);right:9%;left:auto;top:58%;border-radius:48% 52% 34% 66%;background:radial-gradient(ellipse at 35% 30%,rgba(217,245,255,.35),rgba(92,154,255,.08) 70%);box-shadow:0 0 55px rgba(86,179,255,.2);opacity:.65}
-html[data-world="8"] .world-field{background:repeating-linear-gradient(90deg,transparent 0 12vw,rgba(129,186,255,.045) 12.1vw 12.3vw,transparent 12.4vw 24vw),radial-gradient(ellipse at 50% 80%,rgba(97,166,255,.14),transparent 52%)}
-html[data-world="8"] .world-planet{width:clamp(150px,24vw,350px);right:5%;top:4%;border-radius:20%;transform:rotate(45deg) scaleY(1.25);opacity:.18}
-html[data-world="8"] .world-moon{left:12%;top:54%;width:8vw;height:30vh;border-radius:48%;background:linear-gradient(180deg,rgba(193,231,255,.18),rgba(79,128,225,.02));filter:blur(2px);opacity:.75}
-html[data-world="9"] .world-field{background:radial-gradient(ellipse at 50% 82%,rgba(47,163,255,.2),transparent 44%),linear-gradient(180deg,transparent 48%,rgba(92,179,255,.055) 49%,transparent 50%)}
-html[data-world="9"] .world-planet{width:clamp(200px,30vw,440px);right:34%;top:-7%;opacity:.16}
-html[data-world="9"] .world-horizon{height:25vh;clip-path:polygon(0 25%,8% 38%,17% 21%,26% 45%,36% 26%,46% 42%,58% 18%,68% 40%,78% 22%,89% 43%,100% 20%,100% 100%,0 100%);filter:blur(3px)}
+:is(html,.world-prewarm)[data-world="0"] .world-field{background:radial-gradient(ellipse at 80% 24%,rgba(91,157,255,.12),transparent 34%)}
+:is(html,.world-prewarm)[data-world="1"] .world-field{background:radial-gradient(ellipse at 18% 22%,rgba(172,188,255,.2),transparent 26%),radial-gradient(ellipse at 78% 72%,rgba(69,190,255,.13),transparent 34%)}
+:is(html,.world-prewarm)[data-world="1"] .world-planet{right:12%;top:8%;width:clamp(150px,22vw,330px);opacity:.25}
+:is(html,.world-prewarm)[data-world="1"] .world-moon{left:9%;top:18%;width:clamp(90px,14vw,210px);height:clamp(90px,14vw,210px);border-radius:50%;background:radial-gradient(circle at 35% 30%,#e7f7ff,rgba(128,180,255,.4) 38%,rgba(75,107,190,.06) 72%);box-shadow:0 0 65px rgba(127,186,255,.22);opacity:.62}
+:is(html,.world-prewarm)[data-world="2"] .world-field{background:radial-gradient(ellipse at 50% 85%,rgba(83,164,255,.18),transparent 48%),linear-gradient(110deg,transparent 45%,rgba(132,195,255,.05) 50%,transparent 55%)}
+:is(html,.world-prewarm)[data-world="2"] .world-planet{width:clamp(130px,21vw,310px);right:8%;top:19%;border-radius:18% 18% 48% 48%;transform:rotate(35deg);opacity:.24}
+:is(html,.world-prewarm)[data-world="2"] .world-moon{left:18%;top:12%;width:16vw;height:16vw;border:1px solid rgba(185,222,255,.34);background:linear-gradient(135deg,rgba(190,226,255,.15),transparent);clip-path:polygon(50% 0,100% 38%,78% 100%,18% 82%,0 24%);opacity:.7}
+:is(html,.world-prewarm)[data-world="3"] .world-field{background:radial-gradient(ellipse at 42% 42%,rgba(94,123,255,.16),transparent 42%),radial-gradient(ellipse at 88% 88%,rgba(55,189,255,.12),transparent 35%)}
+:is(html,.world-prewarm)[data-world="3"] .world-planet{left:4%;right:auto;top:7%;width:clamp(180px,26vw,380px);opacity:.2}
+:is(html,.world-prewarm)[data-world="3"] .world-horizon{height:34vh;clip-path:polygon(0 55%,9% 42%,18% 59%,27% 22%,39% 52%,51% 16%,61% 48%,72% 27%,83% 58%,92% 34%,100% 50%,100% 100%,0 100%);filter:hue-rotate(22deg)}
+:is(html,.world-prewarm)[data-world="4"] .world-field{background:repeating-linear-gradient(128deg,transparent 0 11vw,rgba(143,199,255,.035) 11.1vw 11.2vw,transparent 11.3vw 21vw)}
+:is(html,.world-prewarm)[data-world="4"] .world-planet{border-radius:8% 50% 12% 50%;transform:rotate(32deg) scale(.9);left:12%;right:auto;top:14%;opacity:.24}
+:is(html,.world-prewarm)[data-world="4"] .world-moon{right:12%;left:auto;top:54%;width:clamp(100px,16vw,230px);height:clamp(100px,16vw,230px);background:linear-gradient(135deg,rgba(208,239,255,.3),rgba(81,141,255,.06));clip-path:polygon(50% 0,100% 34%,78% 100%,17% 81%,0 24%);opacity:.7}
+:is(html,.world-prewarm)[data-world="5"] .world-field{background:radial-gradient(ellipse at 15% 80%,rgba(119,111,255,.18),transparent 40%),radial-gradient(ellipse at 72% 18%,rgba(80,211,255,.16),transparent 42%),radial-gradient(ellipse at 55% 55%,rgba(166,145,255,.08),transparent 55%)}
+:is(html,.world-prewarm)[data-world="5"] .world-planet{width:clamp(250px,40vw,580px);right:28%;top:26%;opacity:.13;filter:blur(1px)}
+:is(html,.world-prewarm)[data-world="5"] .world-moon{width:9vw;height:9vw;left:13%;top:25%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,rgba(134,173,255,.15) 70%);opacity:.65}
+:is(html,.world-prewarm)[data-world="6"] .world-field{background:radial-gradient(ellipse at 50% 42%,rgba(27,48,110,.18),transparent 44%),radial-gradient(ellipse at 50% 100%,rgba(112,188,255,.12),transparent 50%)}
+:is(html,.world-prewarm)[data-world="6"] .world-planet{width:clamp(240px,38vw,540px);left:32%;right:auto;top:16%;opacity:.25;filter:brightness(.68)}
+:is(html,.world-prewarm)[data-world="6"] .world-orbit{width:70vw;height:25vw;left:15%;top:30%;border-color:rgba(190,221,255,.42);transform:rotate(-12deg) rotateX(68deg)}
+:is(html,.world-prewarm)[data-world="7"] .world-field{background:radial-gradient(ellipse at 22% 66%,rgba(78,177,255,.14),transparent 28%),radial-gradient(ellipse at 75% 34%,rgba(151,156,255,.14),transparent 32%)}
+:is(html,.world-prewarm)[data-world="7"] .world-planet{width:clamp(130px,20vw,290px);left:15%;right:auto;top:14%;opacity:.22}
+:is(html,.world-prewarm)[data-world="7"] .world-moon{width:clamp(130px,19vw,270px);height:clamp(80px,12vw,170px);right:9%;left:auto;top:58%;border-radius:48% 52% 34% 66%;background:radial-gradient(ellipse at 35% 30%,rgba(217,245,255,.35),rgba(92,154,255,.08) 70%);box-shadow:0 0 55px rgba(86,179,255,.2);opacity:.65}
+:is(html,.world-prewarm)[data-world="8"] .world-field{background:repeating-linear-gradient(90deg,transparent 0 12vw,rgba(129,186,255,.045) 12.1vw 12.3vw,transparent 12.4vw 24vw),radial-gradient(ellipse at 50% 80%,rgba(97,166,255,.14),transparent 52%)}
+:is(html,.world-prewarm)[data-world="8"] .world-planet{width:clamp(150px,24vw,350px);right:5%;top:4%;border-radius:20%;transform:rotate(45deg) scaleY(1.25);opacity:.18}
+:is(html,.world-prewarm)[data-world="8"] .world-moon{left:12%;top:54%;width:8vw;height:30vh;border-radius:48%;background:linear-gradient(180deg,rgba(193,231,255,.18),rgba(79,128,225,.02));filter:blur(2px);opacity:.75}
+:is(html,.world-prewarm)[data-world="9"] .world-field{background:radial-gradient(ellipse at 50% 82%,rgba(47,163,255,.2),transparent 44%),linear-gradient(180deg,transparent 48%,rgba(92,179,255,.055) 49%,transparent 50%)}
+:is(html,.world-prewarm)[data-world="9"] .world-planet{width:clamp(200px,30vw,440px);right:34%;top:-7%;opacity:.16}
+:is(html,.world-prewarm)[data-world="9"] .world-horizon{height:25vh;clip-path:polygon(0 25%,8% 38%,17% 21%,26% 45%,36% 26%,46% 42%,58% 18%,68% 40%,78% 22%,89% 43%,100% 20%,100% 100%,0 100%);filter:blur(3px)}
 [data-theme="light"] .world-field{filter:saturate(.88) brightness(1.1)}
 [data-theme="dark"] .world-field{filter:saturate(1.2) brightness(.86)}
 [data-theme="light"] .world-field::before{border-color:rgba(62,117,205,.2);box-shadow:0 0 70px rgba(91,151,255,.08),inset 0 0 45px rgba(105,157,255,.06)}
 [data-theme="dark"] .world-field::before{border-color:rgba(165,211,255,.24)}
+.world-prewarm{position:fixed;left:-12000px;top:0;width:18px;height:18px;overflow:hidden;opacity:0;pointer-events:none;contain:strict;z-index:-1}.world-prewarm .world-field{position:absolute;inset:0;width:18px;height:18px;opacity:1;animation-play-state:paused!important}.world-prewarm .world-field i,.world-prewarm .world-field::before,.world-prewarm .world-field::after{animation-play-state:paused!important}
 /* motion pass: smooth the existing motion language without flattening its character */
 .release,.release .art,.release .art img,.release .meta h2,.art-ornament,.art-type,.world-field i,.world-field::before,.world-field::after,.drift-word,.gap-note,.gap-note .move-word,.theme,.fx-toggle,#system-lab button,.system-lab,.next,.mystery-entry{transition-timing-function:cubic-bezier(.18,.75,.22,1)}
 .release,.release .art,.release .art img,.world-field i,.drift-word,.gap-note .move-word{backface-visibility:hidden;transform-style:preserve-3d}
@@ -475,30 +476,46 @@ restore();
  const world=Math.floor(Math.random()*10);
  root.dataset.world=String(world);
  root.dataset.worldReady='true';
- const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const worldTemplate=document.querySelector('.world-field');
+ const prewarm=document.createElement('div');
+ prewarm.className='world-prewarm';
+ prewarm.setAttribute('aria-hidden','true');
+ if(worldTemplate){
+  for(const theme of ['light','dark']){
+   for(let variant=0;variant<10;variant++){
+    const context=document.createElement('div');
+    context.className='world-prewarm';
+    context.dataset.theme=theme;
+    context.dataset.world=String(variant);
+    const field=worldTemplate.cloneNode(true);
+    context.appendChild(field);
+    prewarm.appendChild(context);
+   }
+  }
+  document.body.appendChild(prewarm);
+ }
  const warm=()=>{
-  // Decode every image and font used by this page before marking its visual state warm.
   const imageJobs=[...document.images].map(img=>{
    if(typeof img.decode==='function') return img.decode().catch(()=>{});
    return Promise.resolve();
   });
   const fontJob=document.fonts?.ready||Promise.resolve();
-  const theme=root.dataset.theme||'light';
-  const state={world,theme,images:document.images.length,ready:false};
+  const state={world,theme:root.dataset.theme||'light',images:document.images.length,prewarmedWorlds:20,ready:false};
   Promise.allSettled([...imageJobs,fontJob]).then(()=>{
-   // Touch the current world and theme styles once so the browser resolves their computed styles.
    getComputedStyle(document.querySelector('.world-field')||document.body).transform;
+   prewarm.querySelectorAll('.world-field').forEach(field=>{
+    const style=getComputedStyle(field);
+    void style.backgroundImage;void style.filter;void style.transform;
+   });
    state.ready=true;
    window.__stankVisualState=state;
    root.dataset.visualWarm='true';
   });
  };
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',warm,{once:true}); else warm();
- // Prime the artwork hover layers without displaying them.
- const cards=[...document.querySelectorAll('.release,.cover-wrap')];
- cards.forEach(card=>{
+ document.querySelectorAll('.release,.cover-wrap').forEach(card=>{
   const art=card.querySelector('img')||card;
-  if(art instanceof HTMLImageElement && art.complete) { try{art.decode?.().catch(()=>{});}catch(e){} }
+  if(art instanceof HTMLImageElement && art.complete){try{art.decode?.().catch(()=>{});}catch(e){}}
   card.addEventListener('pointerenter',()=>{card.style.setProperty('--interaction-ready','1')},{once:true,passive:true});
  });
 })();
