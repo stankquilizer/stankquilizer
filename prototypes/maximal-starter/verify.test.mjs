@@ -176,11 +176,11 @@ test('all authored CSS blocks have balanced braces', () => {
     assert.equal((css.match(/\{/g) || []).length, (css.match(/\}/g) || []).length, 'homepage style block ' + (index + 1));
   }
   for (const [i, page] of albumFiles.entries()) {
-    const css = [...page.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]);
-    assert.equal(css.length, 1);
+    const css = [...page.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)].map(m => m[1]);
+    assert.equal(css.length, 2);
     assert.equal((css[0].match(/\{/g) || []).length, (css[0].match(/\}/g) || []).length, 'album page ' + slugs[i]);
   }
-  const mysteryCss = [...mysteryPage.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]);
-  assert.equal(mysteryCss.length, 1);
+  const mysteryCss = [...mysteryPage.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)].map(m => m[1]);
+  assert.equal(mysteryCss.length, 2);
   assert.equal((mysteryCss[0].match(/\{/g) || []).length, (mysteryCss[0].match(/\}/g) || []).length, 'mystery page');
 });
