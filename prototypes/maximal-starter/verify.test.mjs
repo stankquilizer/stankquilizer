@@ -36,8 +36,8 @@ test('the three visual systems have independent, accessible controls', () => {
   assert.match(html, /id="blobTracker"/);
   assert.match(scripts[1], /'mosh-a','mosh-b'/);
   assert.match(scripts[1], /className='mosh-layer '\+name/);
-  assert.match(html, /\\.mosh-a/);
-  assert.match(html, /\\.mosh-b/);
+  assert.match(html, /\.mosh-a/);
+  assert.match(html, /\.mosh-b/);
   assert.match(scripts[1], /themeButton\.addEventListener/);
   assert.equal((scripts[1].match(/themeButton\.addEventListener/g) || []).length, 1);
 });
