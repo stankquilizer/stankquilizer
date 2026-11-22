@@ -119,7 +119,7 @@ test('reduced motion remains respected and loader retains its minimum wait', () 
 });
 
 test('all prototype pages use hyphens rather than em dashes', () => {
-  assert.doesNotMatch([html, ...albumFiles, mysteryPage].join('\n'), /—/);
+  assert.doesNotMatch([html, ...albumFiles, mysteryPage].join('\n'), /\u2014/);
 });
 
 test('all authored CSS blocks have balanced braces', () => {
